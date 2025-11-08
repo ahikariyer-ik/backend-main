@@ -189,6 +189,12 @@ const getNavigation = (): MenuItem[] => [
         path: '/users/create'
       }
     ]
+  },
+  {
+    title: 'Demo Taleplerim',
+    icon: 'tabler-phone-call',
+    path: '/demo-requests',
+    visible: () => authService.isEmployee()
   }
 ]
 
