@@ -20,6 +20,10 @@ export interface Task {
     id: number;
     username: string;
   };
+  company?: {
+    id: number;
+    companyName: string;
+  };
   dueDate: string;
   status: 'pending' | 'in_progress' | 'completed' | 'not_completed';
   statusNote?: string;
@@ -64,7 +68,7 @@ class TaskService {
   public async getTasks(): Promise<StrapiResponse<Task[]>> {
     const response = await axiosClient.get('/api/tasks', {
       params: {
-        populate: ['assignedTo', 'assignedTo.photo', 'assignedTo.department', 'assignedBy'],
+        populate: ['assignedTo', 'assignedTo.photo', 'assignedTo.department', 'assignedBy', 'company'],
         'sort[0]': 'dueDate:asc',
         'pagination[pageSize]': 100
       }
@@ -75,7 +79,7 @@ class TaskService {
   public async getMyTasks(): Promise<StrapiResponse<Task[]>> {
     const response = await axiosClient.get('/api/tasks/my-tasks', {
       params: {
-        populate: ['assignedBy']
+        populate: ['assignedBy', 'company']
       }
     });
     return response.data;

@@ -1,12 +1,21 @@
 import { axiosClient } from '@/libs/axios';
 
+// Belge tipi
+export interface DocumentFile {
+  id: number;
+  url: string;
+  name: string;
+  size: number;
+  mime: string;
+}
+
 // Worker belgelerinin durumu
 export interface WorkerDocuments {
-  criminalRecordDoc: boolean;
-  populationRegistryDoc: boolean;
-  identityDoc: boolean;
-  residenceDoc: boolean;
-  militaryDoc: boolean;
+  criminalRecordDoc: DocumentFile | null;
+  populationRegistryDoc: DocumentFile | null;
+  identityDoc: DocumentFile | null;
+  residenceDoc: DocumentFile | null;
+  militaryDoc: DocumentFile | null;
 }
 
 // Çalışan tipi
@@ -171,6 +180,14 @@ class WorkersService {
     
     // WhatsApp API linki
     return `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`;
+  }
+
+  /**
+   * Evrak sil
+   */
+  public async deleteDocument(workerId: string, documentType: string): Promise<{ success: boolean; message: string }> {
+    const response = await axiosClient.post(`/api/workers/${workerId}/document/${documentType}/delete`);
+    return response.data;
   }
 }
 

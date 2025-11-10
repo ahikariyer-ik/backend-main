@@ -51,7 +51,10 @@ interface Worker {
   }
   hireDate: string
   profession?: string
-  branch?: string
+  branch?: {
+    name: string
+    key?: string
+  }
   isActive: boolean
   isRetired: boolean
   isDisabled: boolean
@@ -99,7 +102,7 @@ const WorkersListPage = () => {
         params: {
           'filters[company][id]': companyProfile.id,
           'filters[isActive]': true, // Sadece aktif çalışanları göster
-          populate: ['photo', 'department', 'user'],
+          populate: ['photo', 'department', 'branch', 'user'],
           'sort[0]': 'createdAt:desc'
         }
       })
@@ -323,7 +326,7 @@ const WorkersListPage = () => {
                     <TableCell>{worker.email}</TableCell>
                     <TableCell>{worker.phone || '-'}</TableCell>
                     <TableCell>{worker.profession || '-'}</TableCell>
-                    <TableCell>{worker.branch || '-'}</TableCell>
+                    <TableCell>{worker.branch?.name || '-'}</TableCell>
                     <TableCell>
                       {worker.hireDate ? new Date(worker.hireDate).toLocaleDateString('tr-TR') : '-'}
                     </TableCell>

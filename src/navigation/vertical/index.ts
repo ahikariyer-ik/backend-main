@@ -12,24 +12,6 @@ interface MenuItem {
 
 const getNavigation = (): MenuItem[] => [
   {
-    title: 'Dashboard',
-    icon: 'tabler-dashboard',
-    path: '/company-dashboard',
-    visible: () => authService.isCompany()
-  },
-  {
-    title: 'Dashboard',
-    icon: 'tabler-dashboard',
-    path: '/employee-dashboard',
-    visible: () => authService.isEmployee()
-  },
-  {
-    title: 'Dashboard',
-    icon: 'tabler-dashboard',
-    path: '/worker-dashboard',
-    visible: () => authService.isWorker()
-  },
-  {
     title: 'Sayfalar',
     icon: 'tabler-file',
     path: '/pages',
@@ -111,11 +93,17 @@ const getNavigation = (): MenuItem[] => [
     ]
   },
   {
-    title: 'AHİ-İK',
+    title: 'İnsan Kaynakları',
     icon: 'tabler-users',
-    path: '/digital-hr',
+    path: '/statistics',
     visible: () => authService.isAhiIk() || authService.isEmployee(),
     children: [
+      {
+        title: 'Ana Sayfa',
+        icon: 'tabler-home',
+        path: '/statistics',
+        visible: () => authService.isAhiIk()
+      },
       {
         title: 'Dijital İK',
         icon: 'tabler-file-check',

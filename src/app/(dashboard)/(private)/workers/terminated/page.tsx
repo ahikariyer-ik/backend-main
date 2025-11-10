@@ -44,7 +44,10 @@ interface TerminatedWorker {
   terminationDate: string
   terminationReason: string
   profession?: string
-  branch?: string
+  branch?: {
+    name: string
+    key?: string
+  }
   department?: {
     name: string
   }
@@ -78,7 +81,7 @@ const TerminatedWorkersPage = () => {
         params: {
           'filters[company][id]': companyProfile.id,
           'filters[isActive]': false,
-          populate: ['photo', 'department'],
+          populate: ['photo', 'department', 'branch'],
           'sort[0]': 'terminationDate:desc'
         }
       })
@@ -203,7 +206,7 @@ const TerminatedWorkersPage = () => {
                     <TableCell>{worker.email}</TableCell>
                     <TableCell>{worker.phone || '-'}</TableCell>
                     <TableCell>{worker.profession || '-'}</TableCell>
-                    <TableCell>{worker.branch || '-'}</TableCell>
+                    <TableCell>{worker.branch?.name || '-'}</TableCell>
                     <TableCell>
                       {worker.hireDate ? new Date(worker.hireDate).toLocaleDateString('tr-TR') : '-'}
                     </TableCell>

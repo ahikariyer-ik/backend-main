@@ -23,17 +23,28 @@ import Chip from '@mui/material/Chip'
 import Dialog from '@mui/material/Dialog'
 import DialogTitle from '@mui/material/DialogTitle'
 import DialogContent from '@mui/material/DialogContent'
-import DialogContentText from '@mui/material/DialogContentText'
 import DialogActions from '@mui/material/DialogActions'
 import Button from '@mui/material/Button'
-import TextField from '@mui/material/TextField'
 import CircularProgress from '@mui/material/CircularProgress'
+import FormControl from '@mui/material/FormControl'
+import InputLabel from '@mui/material/InputLabel'
+import Select from '@mui/material/Select'
+import MenuItem from '@mui/material/MenuItem'
 
 // Services
-import { workersService, type Worker } from '@/services/workers.service'
+import { workersService, type Worker, type DocumentFile } from '@/services/workers.service'
+import { axiosClient } from '@/libs/axios'
 
 // Belge türleri - Türkçe etiketler
-const documentLabels = {
+const documentTypes = [
+  { value: 'criminalRecordDoc', label: 'Adli Sicil' },
+  { value: 'populationRegistryDoc', label: 'Nüfus Kaydı' },
+  { value: 'identityDoc', label: 'Kimlik' },
+  { value: 'residenceDoc', label: 'İkametgah' },
+  { value: 'militaryDoc', label: 'Askerlik' }
+]
+
+const documentTypeLabels: Record<string, string> = {
   criminalRecordDoc: 'Adli Sicil',
   populationRegistryDoc: 'Nüfus Kaydı',
   identityDoc: 'Kimlik',
@@ -46,12 +57,15 @@ const DigitalHRPage = () => {
   const [workers, setWorkers] = useState<Worker[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState<string | null>(null)
   const [selectedWorker, setSelectedWorker] = useState<Worker | null>(null)
-  const [linkDialogOpen, setLinkDialogOpen] = useState(false)
-  const [generatedLink, setGeneratedLink] = useState<string>('')
-  const [whatsappLink, setWhatsAppLink] = useState<string>('')
-  const [generatingToken, setGeneratingToken] = useState(false)
-  const [copiedLink, setCopiedLink] = useState(false)
+  const [uploadDialogOpen, setUploadDialogOpen] = useState(false)
+  const [selectedDocType, setSelectedDocType] = useState('')
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [uploading, setUploading] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+  const [viewDocumentDialog, setViewDocumentDialog] = useState(false)
+  const [selectedDocument, setSelectedDocument] = useState<{ file: DocumentFile | null, label: string, docType: string, workerId: string } | null>(null)
 
   // Effects
   useEffect(() => {
@@ -78,85 +92,188 @@ const DigitalHRPage = () => {
     }
   }
 
-  const handleGenerateLink = async (worker: Worker) => {
+  const handleOpenUploadDialog = (worker: Worker) => {
+    setSelectedWorker(worker)
+    setSelectedDocType('')
+    setSelectedFile(null)
+    setUploadDialogOpen(true)
+    setError(null)
+    setSuccess(null)
+  }
+
+  const handleCloseUploadDialog = () => {
+    setUploadDialogOpen(false)
+    setSelectedWorker(null)
+    setSelectedDocType('')
+    setSelectedFile(null)
+  }
+
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (file) {
+      // Sadece PDF kontrolü
+      if (file.type !== 'application/pdf') {
+        setError('Sadece PDF dosyaları yüklenebilir')
+        setSelectedFile(null)
+        return
+      }
+      // Dosya boyutu kontrolü (10MB)
+      if (file.size > 10 * 1024 * 1024) {
+        setError('Dosya boyutu 10MB\'dan küçük olmalıdır')
+        setSelectedFile(null)
+        return
+      }
+      setSelectedFile(file)
+      setError(null)
+    }
+  }
+
+  const handleUploadDocument = async () => {
+    if (!selectedWorker || !selectedDocType || !selectedFile) {
+      setError('Lütfen tüm alanları doldurun')
+      return
+    }
+
     try {
-      setGeneratingToken(true)
-      setSelectedWorker(worker)
+      setUploading(true)
+      setError(null)
+
+      // 1. Dosyayı Strapi'ye yükle
+      const formData = new FormData()
+      formData.append('files', selectedFile)
+
+      const uploadResponse = await axiosClient.post('/api/upload', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      })
+
+      const uploadedFile = uploadResponse.data[0]
+
+      // 2. Worker'ı güncelle
+      const updateData: any = {}
+      updateData[selectedDocType] = uploadedFile.id
+
+      await axiosClient.put(`/api/workers/${selectedWorker.id}`, {
+        data: updateData
+      })
+
+      setSuccess(`${documentTypes.find(d => d.value === selectedDocType)?.label} belgesi başarıyla yüklendi`)
+      
+      // Liste yenile
+      await loadWorkers()
+      
+      // 2 saniye sonra dialog'u kapat
+      setTimeout(() => {
+        handleCloseUploadDialog()
+        setSuccess(null)
+      }, 2000)
+
+    } catch (error: any) {
+      console.error('Belge yüklenirken hata:', error)
+      setError(error.response?.data?.error?.message || 'Belge yüklenirken bir hata oluştu')
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  const handleViewDocument = (doc: DocumentFile | null, docType: string, workerId: string) => {
+    if (doc) {
+      setSelectedDocument({
+        file: doc,
+        label: documentTypeLabels[docType] || docType,
+        docType: docType,
+        workerId: workerId
+      })
+      setViewDocumentDialog(true)
+    }
+  }
+
+  const handleDeleteDocument = async () => {
+    if (!selectedDocument) return
+
+    try {
+      setDeleting(true)
       setError(null)
       
-      const response = await workersService.generateUploadToken(worker.id)
+      await workersService.deleteDocument(selectedDocument.workerId, selectedDocument.docType)
       
-      if (response.error) {
-        throw new Error(response.error.message)
-      }
+      setSuccess(`${selectedDocument.label} belgesi başarıyla silindi`)
+      setViewDocumentDialog(false)
       
-      setGeneratedLink(response.data.uploadUrl)
+      // Liste yenile
+      await loadWorkers()
       
-      // WhatsApp linki oluştur
-      if (worker.phone) {
-        const waLink = workersService.generateWhatsAppLink(
-          worker.phone,
-          response.data.uploadUrl,
-          `${worker.firstName} ${worker.lastName}`
-        )
-        setWhatsAppLink(waLink)
-      }
-      
-      setLinkDialogOpen(true)
-      setCopiedLink(false)
-      
-      // Listeyi yenile
-      loadWorkers()
+      // Success mesajını 2 saniye sonra kaldır
+      setTimeout(() => {
+        setSuccess(null)
+      }, 2000)
+
     } catch (error: any) {
-      console.error('Link oluşturulurken hata:', error)
-      setError(error.message || 'Link oluşturulurken bir hata oluştu')
+      console.error('Belge silinirken hata:', error)
+      setError(error.response?.data?.error?.message || 'Belge silinirken bir hata oluştu')
     } finally {
-      setGeneratingToken(false)
+      setDeleting(false)
     }
   }
 
-  const handleCopyLink = () => {
-    navigator.clipboard.writeText(generatedLink)
-    setCopiedLink(true)
-    setTimeout(() => setCopiedLink(false), 2000)
-  }
-
-  const handleSendWhatsApp = () => {
-    if (whatsappLink) {
-      window.open(whatsappLink, '_blank')
+  const handleDownloadDocument = () => {
+    if (selectedDocument?.file) {
+      const url = `${process.env.NEXT_PUBLIC_API_URL}${selectedDocument.file.url}`
+      const link = document.createElement('a')
+      link.href = url
+      link.download = selectedDocument.file.name
+      link.target = '_blank'
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
     }
   }
 
-  const handleCloseLinkDialog = () => {
-    setLinkDialogOpen(false)
-    setGeneratedLink('')
-    setWhatsAppLink('')
-    setSelectedWorker(null)
+  const handleViewDocumentInNewTab = () => {
+    if (selectedDocument?.file) {
+      const url = `${process.env.NEXT_PUBLIC_API_URL}${selectedDocument.file.url}`
+      window.open(url, '_blank')
+    }
   }
 
   // Belge durumu ikonu
-  const DocumentStatusIcon = ({ uploaded }: { uploaded: boolean }) => {
+  const DocumentStatusIcon = ({ document, docType, workerId }: { document: DocumentFile | null, docType: string, workerId: string }) => {
+    const uploaded = !!document
+    
     return (
-      <Box
-        sx={{
-          width: 24,
-          height: 24,
-          borderRadius: '50%',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          bgcolor: uploaded ? 'success.main' : 'error.main'
-        }}
-      >
-        <i className={uploaded ? 'tabler-check' : 'tabler-x'} style={{ fontSize: 16, color: 'white' }} />
-      </Box>
+      <Tooltip title={uploaded ? 'Evrakı Görüntüle' : 'Yüklenmemiş'}>
+        <span>
+          <IconButton
+            size='small'
+            onClick={() => uploaded && handleViewDocument(document, docType, workerId)}
+            disabled={!uploaded}
+            sx={{
+              bgcolor: uploaded ? 'success.main' : 'error.main',
+              color: 'white',
+              width: 24,
+              height: 24,
+              '&:hover': {
+                bgcolor: uploaded ? 'success.dark' : 'error.main',
+              },
+              '&.Mui-disabled': {
+                bgcolor: 'error.main',
+                color: 'white',
+                opacity: 0.6
+              }
+            }}
+          >
+            <i className={uploaded ? 'tabler-check' : 'tabler-x'} style={{ fontSize: 14 }} />
+          </IconButton>
+        </span>
+      </Tooltip>
     )
   }
 
   // Tamamlanma yüzdesi hesapla
   const calculateCompletionPercentage = (documents: Worker['documents']) => {
     const totalDocs = 5
-    const uploadedDocs = Object.values(documents).filter(Boolean).length
+    const uploadedDocs = Object.values(documents).filter((doc) => doc !== null).length
     return Math.round((uploadedDocs / totalDocs) * 100)
   }
 
@@ -172,12 +289,18 @@ const DigitalHRPage = () => {
     <Card>
       <CardHeader
         title='Dijital İK - Çalışan Belgeleri'
-        subheader='Çalışanlarınızın belge durumlarını görüntüleyin ve belge yükleme linki gönderin'
+        subheader='Çalışanlarınızın belgelerini görüntüleyin ve yükleyin'
       />
       <CardContent>
         {error && (
           <Alert severity='error' sx={{ mb: 4 }} onClose={() => setError(null)}>
             {error}
+          </Alert>
+        )}
+
+        {success && (
+          <Alert severity='success' sx={{ mb: 4 }} onClose={() => setSuccess(null)}>
+            {success}
           </Alert>
         )}
 
@@ -205,10 +328,6 @@ const DigitalHRPage = () => {
               <TableBody>
                 {workers.map(worker => {
                   const completionPercentage = calculateCompletionPercentage(worker.documents)
-                  const hasToken = !!worker.uploadToken
-                  const tokenExpired = worker.tokenExpiresAt 
-                    ? new Date(worker.tokenExpiresAt) < new Date()
-                    : false
 
                   return (
                     <TableRow key={worker.id}>
@@ -249,19 +368,19 @@ const DigitalHRPage = () => {
                         )}
                       </TableCell>
                       <TableCell align='center'>
-                        <DocumentStatusIcon uploaded={worker.documents.criminalRecordDoc} />
+                        <DocumentStatusIcon document={worker.documents.criminalRecordDoc} docType='criminalRecordDoc' workerId={worker.id} />
                       </TableCell>
                       <TableCell align='center'>
-                        <DocumentStatusIcon uploaded={worker.documents.populationRegistryDoc} />
+                        <DocumentStatusIcon document={worker.documents.populationRegistryDoc} docType='populationRegistryDoc' workerId={worker.id} />
                       </TableCell>
                       <TableCell align='center'>
-                        <DocumentStatusIcon uploaded={worker.documents.identityDoc} />
+                        <DocumentStatusIcon document={worker.documents.identityDoc} docType='identityDoc' workerId={worker.id} />
                       </TableCell>
                       <TableCell align='center'>
-                        <DocumentStatusIcon uploaded={worker.documents.residenceDoc} />
+                        <DocumentStatusIcon document={worker.documents.residenceDoc} docType='residenceDoc' workerId={worker.id} />
                       </TableCell>
                       <TableCell align='center'>
-                        <DocumentStatusIcon uploaded={worker.documents.militaryDoc} />
+                        <DocumentStatusIcon document={worker.documents.militaryDoc} docType='militaryDoc' workerId={worker.id} />
                       </TableCell>
                       <TableCell align='center'>
                         <Chip
@@ -271,33 +390,15 @@ const DigitalHRPage = () => {
                         />
                       </TableCell>
                       <TableCell align='center'>
-                        <Tooltip 
-                          title={
-                            hasToken && !tokenExpired 
-                              ? 'Yeni link oluştur (mevcut link geçersiz olacak)' 
-                              : 'WhatsApp ile belge yükleme linki gönder'
-                          }
-                        >
+                        <Tooltip title='Evrak Yükle'>
                           <IconButton
                             color='primary'
                             size='small'
-                            onClick={() => handleGenerateLink(worker)}
-                            disabled={generatingToken}
+                            onClick={() => handleOpenUploadDialog(worker)}
                           >
-                            {generatingToken && selectedWorker?.id === worker.id ? (
-                              <CircularProgress size={20} />
-                            ) : (
-                              <i className='tabler-brand-whatsapp' />
-                            )}
+                            <i className='tabler-upload' />
                           </IconButton>
                         </Tooltip>
-                        {hasToken && !tokenExpired && (
-                          <Tooltip title='Aktif link mevcut'>
-                            <IconButton size='small' color='success'>
-                              <i className='tabler-link' />
-                            </IconButton>
-                          </Tooltip>
-                        )}
                       </TableCell>
                     </TableRow>
                   )
@@ -307,60 +408,204 @@ const DigitalHRPage = () => {
           </TableContainer>
         )}
 
-        {/* Link Oluşturma Dialog */}
-        <Dialog open={linkDialogOpen} onClose={handleCloseLinkDialog} maxWidth='sm' fullWidth>
+        {/* Evrak Yükleme Dialog */}
+        <Dialog open={uploadDialogOpen} onClose={handleCloseUploadDialog} maxWidth='sm' fullWidth>
           <DialogTitle>
-            Belge Yükleme Linki Oluşturuldu
+            Evrak Yükle
           </DialogTitle>
           <DialogContent>
             {selectedWorker && (
-              <>
-                <DialogContentText sx={{ mb: 2 }}>
-                  <strong>{selectedWorker.firstName} {selectedWorker.lastName}</strong> için belge yükleme linki oluşturuldu.
-                  Bu linki WhatsApp üzerinden gönderebilir veya kopyalayabilirsiniz.
-                </DialogContentText>
-
-                <Alert severity='info' sx={{ mb: 2 }}>
-                  Link 30 gün süreyle geçerli olacaktır.
+              <Box sx={{ mt: 2, display: 'flex', flexDirection: 'column', gap: 3 }}>
+                {/* Çalışan Bilgisi */}
+                <Alert severity='info'>
+                  <Typography variant='subtitle2' sx={{ fontWeight: 600 }}>
+                    Çalışan: {selectedWorker.firstName} {selectedWorker.lastName}
+                  </Typography>
+                  {selectedWorker.profession && (
+                    <Typography variant='caption' color='textSecondary'>
+                      {selectedWorker.profession}
+                    </Typography>
+                  )}
                 </Alert>
 
-                <TextField
-                  fullWidth
-                  label='Belge Yükleme Linki'
-                  value={generatedLink}
-                  InputProps={{
-                    readOnly: true,
-                  }}
-                  sx={{ mb: 2 }}
-                  multiline
-                  rows={2}
-                />
+                {/* Evrak Tipi Seçimi */}
+                <FormControl fullWidth required>
+                  <InputLabel>Yüklenecek Evrak</InputLabel>
+                  <Select
+                    value={selectedDocType}
+                    label='Yüklenecek Evrak'
+                    onChange={(e) => setSelectedDocType(e.target.value)}
+                  >
+                    {documentTypes.map((docType) => {
+                      const doc = selectedWorker.documents[docType.value as keyof typeof selectedWorker.documents]
+                      const isUploaded = doc !== null
+                      
+                      return (
+                        <MenuItem key={docType.value} value={docType.value}>
+                          {docType.label}
+                          {isUploaded && (
+                            <Chip
+                              label='Yüklendi'
+                              size='small'
+                              color='success'
+                              sx={{ ml: 1 }}
+                            />
+                          )}
+                        </MenuItem>
+                      )
+                    })}
+                  </Select>
+                </FormControl>
 
-                <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                {/* Dosya Seçimi */}
+                <Box>
                   <Button
                     variant='outlined'
-                    onClick={handleCopyLink}
-                    startIcon={copiedLink ? <i className='tabler-check' /> : <i className='tabler-copy' />}
+                    component='label'
+                    fullWidth
+                    startIcon={<i className='tabler-file-upload' />}
+                    sx={{ py: 2 }}
                   >
-                    {copiedLink ? 'Kopyalandı!' : 'Linki Kopyala'}
+                    {selectedFile ? selectedFile.name : 'PDF Dosyası Seç'}
+                    <input
+                      type='file'
+                      hidden
+                      accept='application/pdf'
+                      onChange={handleFileSelect}
+                    />
                   </Button>
-
-                  {selectedWorker.phone && (
-                    <Button
-                      variant='contained'
-                      color='success'
-                      onClick={handleSendWhatsApp}
-                      startIcon={<i className='tabler-brand-whatsapp' />}
-                    >
-                      WhatsApp ile Gönder
-                    </Button>
-                  )}
+                  <Typography variant='caption' color='textSecondary' sx={{ mt: 1, display: 'block' }}>
+                    Sadece PDF formatında dosya yükleyebilirsiniz (Maksimum 10MB)
+                  </Typography>
                 </Box>
-              </>
+
+                {/* Hata/Başarı Mesajı */}
+                {error && (
+                  <Alert severity='error'>{error}</Alert>
+                )}
+
+                {success && (
+                  <Alert severity='success'>{success}</Alert>
+                )}
+              </Box>
             )}
           </DialogContent>
           <DialogActions>
-            <Button onClick={handleCloseLinkDialog}>Kapat</Button>
+            <Button onClick={handleCloseUploadDialog} disabled={uploading}>
+              İptal
+            </Button>
+            <Button
+              onClick={handleUploadDocument}
+              variant='contained'
+              disabled={!selectedDocType || !selectedFile || uploading}
+              startIcon={uploading ? <CircularProgress size={20} /> : <i className='tabler-upload' />}
+            >
+              {uploading ? 'Yükleniyor...' : 'Yükle'}
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        {/* Evrak Görüntüleme Dialog */}
+        <Dialog 
+          open={viewDocumentDialog} 
+          onClose={() => setViewDocumentDialog(false)} 
+          maxWidth='md' 
+          fullWidth
+        >
+          <DialogTitle>
+            {selectedDocument?.label}
+          </DialogTitle>
+          <DialogContent>
+            {selectedDocument?.file && (
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, py: 2 }}>
+                {/* Dosya Bilgileri */}
+                <Alert severity='info'>
+                  <Typography variant='subtitle2' sx={{ fontWeight: 600, mb: 0.5 }}>
+                    📄 {selectedDocument.file.name}
+                  </Typography>
+                  <Typography variant='caption' color='textSecondary'>
+                    Boyut: {(selectedDocument.file.size / 1024).toFixed(2)} KB
+                  </Typography>
+                </Alert>
+
+                {/* PDF İkonu ve Bilgi */}
+                <Box
+                  sx={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: 3,
+                    py: 6,
+                    bgcolor: 'action.hover',
+                    borderRadius: 2
+                  }}
+                >
+                  <Box
+                    sx={{
+                      width: 120,
+                      height: 120,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      bgcolor: 'error.main',
+                      borderRadius: 3,
+                      boxShadow: 3
+                    }}
+                  >
+                    <i className='tabler-file-type-pdf' style={{ fontSize: 80, color: 'white' }} />
+                  </Box>
+
+                  <Box sx={{ textAlign: 'center' }}>
+                    <Typography variant='h6' sx={{ mb: 1, fontWeight: 600 }}>
+                      {selectedDocument.label}
+                    </Typography>
+                    <Typography variant='body2' color='textSecondary'>
+                      PDF belgesini görüntülemek için aşağıdaki butonları kullanın
+                    </Typography>
+                  </Box>
+                </Box>
+
+                {/* Butonlar */}
+                <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center', flexWrap: 'wrap' }}>
+                  <Button
+                    variant='contained'
+                    color='primary'
+                    size='large'
+                    startIcon={<i className='tabler-eye' />}
+                    onClick={handleViewDocumentInNewTab}
+                    sx={{ minWidth: 200 }}
+                  >
+                    Görüntüle
+                  </Button>
+                  <Button
+                    variant='outlined'
+                    color='primary'
+                    size='large'
+                    startIcon={<i className='tabler-download' />}
+                    onClick={handleDownloadDocument}
+                    sx={{ minWidth: 200 }}
+                  >
+                    İndir
+                  </Button>
+                  <Button
+                    variant='outlined'
+                    color='error'
+                    size='large'
+                    startIcon={deleting ? <CircularProgress size={20} /> : <i className='tabler-trash' />}
+                    onClick={handleDeleteDocument}
+                    disabled={deleting}
+                    sx={{ minWidth: 200 }}
+                  >
+                    {deleting ? 'Siliniyor...' : 'Sil'}
+                  </Button>
+                </Box>
+              </Box>
+            )}
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setViewDocumentDialog(false)} disabled={deleting}>
+              Kapat
+            </Button>
           </DialogActions>
         </Dialog>
       </CardContent>
@@ -369,4 +614,3 @@ const DigitalHRPage = () => {
 }
 
 export default DigitalHRPage
-
