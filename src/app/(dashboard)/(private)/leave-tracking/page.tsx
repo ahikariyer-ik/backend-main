@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 
 // MUI Imports
-import { Card, CardHeader, CardContent, Grid, Box, Typography, Chip, Button, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Alert, LinearProgress } from '@mui/material'
+import { Card, CardHeader, CardContent, Grid, Box, Typography, Chip, Button, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Alert, LinearProgress, CircularProgress } from '@mui/material'
 
 // Services
 import { leaveRequestService, LeaveRequest } from '@/services/leave-request.service'
@@ -14,8 +14,10 @@ const LeaveTrackingPage = () => {
   const [error, setError] = useState<string | null>(null)
   const [selectedRequest, setSelectedRequest] = useState<LeaveRequest | null>(null)
   const [reviewDialogOpen, setReviewDialogOpen] = useState(false)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [reviewNote, setReviewNote] = useState('')
   const [reviewAction, setReviewAction] = useState<'approve' | 'reject'>('approve')
+  const [deleting, setDeleting] = useState(false)
 
   useEffect(() => {
     loadLeaveRequests()
@@ -60,6 +62,29 @@ const LeaveTrackingPage = () => {
     } catch (error: any) {
       console.error('İzin talebi işlenirken hata:', error)
       setError(error.message || 'İzin talebi işlenirken bir hata oluştu')
+    }
+  }
+
+  const handleDeleteClick = (request: LeaveRequest) => {
+    setSelectedRequest(request)
+    setDeleteDialogOpen(true)
+  }
+
+  const handleDeleteConfirm = async () => {
+    if (!selectedRequest) return
+
+    try {
+      setDeleting(true)
+      await leaveRequestService.deleteLeaveRequest(selectedRequest.documentId)
+      
+      await loadLeaveRequests()
+      setDeleteDialogOpen(false)
+      setSelectedRequest(null)
+    } catch (error: any) {
+      console.error('İzin talebi silinirken hata:', error)
+      setError(error.message || 'İzin talebi silinirken bir hata oluştu')
+    } finally {
+      setDeleting(false)
     }
   }
 
@@ -215,30 +240,41 @@ const LeaveTrackingPage = () => {
                       />
                     </TableCell>
                     <TableCell>
-                      {request.status === 'pending' ? (
-                        <Box sx={{ display: 'flex', gap: 1 }}>
-                          <Button
-                            size='small'
-                            variant='contained'
-                            color='success'
-                            onClick={() => handleReviewClick(request, 'approve')}
-                          >
-                            Onayla
-                          </Button>
-                          <Button
-                            size='small'
-                            variant='outlined'
-                            color='error'
-                            onClick={() => handleReviewClick(request, 'reject')}
-                          >
-                            Reddet
-                          </Button>
-                        </Box>
-                      ) : (
-                        <Typography variant='body2' color='text.secondary'>
-                          {request.reviewedAt && new Date(request.reviewedAt).toLocaleDateString('tr-TR')}
-                        </Typography>
-                      )}
+                      <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+                        {request.status === 'pending' ? (
+                          <>
+                            <Button
+                              size='small'
+                              variant='contained'
+                              color='success'
+                              onClick={() => handleReviewClick(request, 'approve')}
+                            >
+                              Onayla
+                            </Button>
+                            <Button
+                              size='small'
+                              variant='outlined'
+                              color='error'
+                              onClick={() => handleReviewClick(request, 'reject')}
+                            >
+                              Reddet
+                            </Button>
+                          </>
+                        ) : (
+                          <Typography variant='body2' color='text.secondary'>
+                            {request.reviewedAt && new Date(request.reviewedAt).toLocaleDateString('tr-TR')}
+                          </Typography>
+                        )}
+                        <Button
+                          size='small'
+                          variant='outlined'
+                          color='error'
+                          onClick={() => handleDeleteClick(request)}
+                          startIcon={<i className='tabler-trash' />}
+                        >
+                          Sil
+                        </Button>
+                      </Box>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -282,6 +318,58 @@ const LeaveTrackingPage = () => {
             onClick={handleReviewConfirm}
           >
             {reviewAction === 'approve' ? 'Onayla' : 'Reddet'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteDialogOpen} onClose={() => !deleting && setDeleteDialogOpen(false)} maxWidth='sm' fullWidth>
+        <DialogTitle>
+          İzin Talebini Sil
+        </DialogTitle>
+        <DialogContent>
+          {selectedRequest && (
+            <Box>
+              <Alert severity='warning' sx={{ mb: 2 }}>
+                Bu işlem geri alınamaz!
+              </Alert>
+              <Box sx={{ mb: 1 }}>
+                <Typography variant='body1' component='div'>
+                  <strong>{selectedRequest.worker.firstName} {selectedRequest.worker.lastName}</strong> adlı çalışanın aşağıdaki izin talebini silmek istediğinizden emin misiniz?
+                </Typography>
+              </Box>
+              <Box sx={{ mt: 2, p: 2, bgcolor: 'background.default', borderRadius: 1 }}>
+                <Typography variant='body2' color='text.secondary' sx={{ mb: 1 }}>
+                  İzin Türü: <strong>{getLeaveTypeLabel(selectedRequest.leaveType)}</strong>
+                </Typography>
+                <Typography variant='body2' color='text.secondary' sx={{ mb: 1 }}>
+                  Tarih: <strong>{new Date(selectedRequest.startDate).toLocaleDateString('tr-TR')} - {new Date(selectedRequest.endDate).toLocaleDateString('tr-TR')}</strong>
+                </Typography>
+                <Typography variant='body2' color='text.secondary' sx={{ mb: 1 }}>
+                  Süre: <strong>{selectedRequest.totalDays} gün</strong>
+                </Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Typography variant='body2' color='text.secondary'>
+                    Durum:
+                  </Typography>
+                  <Chip label={getStatusLabel(selectedRequest.status)} color={getStatusColor(selectedRequest.status) as any} size='small' />
+                </Box>
+              </Box>
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteDialogOpen(false)} disabled={deleting}>
+            İptal
+          </Button>
+          <Button
+            variant='contained'
+            color='error'
+            onClick={handleDeleteConfirm}
+            disabled={deleting}
+            startIcon={deleting ? <CircularProgress size={16} /> : <i className='tabler-trash' />}
+          >
+            {deleting ? 'Siliniyor...' : 'Evet, Sil'}
           </Button>
         </DialogActions>
       </Dialog>

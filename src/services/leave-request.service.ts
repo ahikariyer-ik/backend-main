@@ -81,6 +81,16 @@ class LeaveRequestService {
     return response.data;
   }
 
+  public async getMyRequests(): Promise<StrapiResponse<LeaveRequest[]>> {
+    const response = await axiosClient.get('/api/leave-requests/my-requests');
+    return response.data;
+  }
+
+  public async getMyRemainingDays(): Promise<StrapiResponse<any>> {
+    const response = await axiosClient.get('/api/leave-requests/my-remaining-days');
+    return response.data;
+  }
+
   public async getRemainingDays(workerId: string): Promise<StrapiResponse<any>> {
     const response = await axiosClient.get(`/api/leave-requests/worker/${workerId}/remaining-days`);
     return response.data;
@@ -98,6 +108,11 @@ class LeaveRequestService {
 
   public async rejectLeaveRequest(documentId: string, reviewNote?: string): Promise<StrapiResponse<LeaveRequest>> {
     const response = await axiosClient.put(`/api/leave-requests/${documentId}/reject`, { reviewNote });
+    return response.data;
+  }
+
+  public async deleteLeaveRequest(documentId: string): Promise<StrapiResponse<any>> {
+    const response = await axiosClient.delete(`/api/leave-requests/${documentId}`);
     return response.data;
   }
 }

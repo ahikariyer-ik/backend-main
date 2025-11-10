@@ -32,14 +32,32 @@ export function middleware(request: NextRequest) {
     if (!token) {
       return NextResponse.redirect(new URL('/login', request.url))
     }
-    // employee veya authenticated (company) rollere göre
+    // Role göre yönlendirme
     const dest = userData?.role?.type === 'employee'
       ? '/employee-dashboard'
       : userData?.role?.type === 'authenticated'
         ? '/company-dashboard'
-        : '/login'
+        : userData?.role?.type === 'worker'
+          ? '/worker-dashboard'
+          : '/login'
 
     return NextResponse.redirect(new URL(dest, request.url))
+  }
+  
+  // WORKER KORUMASI: Worker sadece kendi sayfalarına erişebilir
+  if (userData?.role?.type === 'worker') {
+    const workerAllowedPaths = [
+      '/worker-dashboard',
+      '/worker-tasks', 
+      '/worker-leave-requests'
+    ]
+    
+    const isWorkerPath = workerAllowedPaths.some(path => pathname.startsWith(path))
+    
+    // Worker izinli path'de değilse, dashboard'a yönlendir
+    if (!isWorkerPath) {
+      return NextResponse.redirect(new URL('/worker-dashboard', request.url))
+    }
   }
 
   // Token yoksa login sayfasına yönlendir
@@ -51,24 +69,57 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl)
   }
 
-  // AHİ-İK sayfalarına erişim kontrolü
-  const ahiIkPaths = ['/digital-hr', '/workers', '/pdks', '/leave-tracking']
-  const isAhiIkPath = ahiIkPaths.some(path => pathname.startsWith(path))
+  // ŞIRKET/ADMIN SAYFALARI KORUMASI: Worker bu sayfalara erişemez
+  const companyPaths = [
+    '/digital-hr', 
+    '/workers', 
+    '/pdks', 
+    '/leave-tracking',
+    '/tasks',
+    '/branches',
+    '/departments',
+    '/statistics',
+    '/services',
+    '/pages',
+    '/datas',
+    '/users',
+    '/demo-requests',
+    '/applications',
+    '/jobs',
+    '/company-dashboard',
+    '/employee-dashboard',
+    '/profile/company'
+  ]
   
-  if (isAhiIkPath && userData) {
-    const isCompany = userData?.role?.type === 'authenticated'
-    const isEmployee = userData?.role?.type === 'employee'
-    const isAhiIk = isCompany && userData?.ahiIkMember === true
-
-    // Şirketler sadece AHİ-İK'ya tanımlı ise erişebilir
-    // Employee her zaman erişebilir
-    if (isCompany && !isAhiIk) {
-      return NextResponse.redirect(new URL('/company-dashboard', request.url))
+  const isCompanyPath = companyPaths.some(path => pathname.startsWith(path))
+  
+  if (isCompanyPath && userData) {
+    const isWorker = userData?.role?.type === 'worker'
+    
+    // Worker bu sayfalara erişemez!
+    if (isWorker) {
+      return NextResponse.redirect(new URL('/worker-dashboard', request.url))
     }
     
-    // Employee değilse ve AHİ-İK şirket değilse erişemez
-    if (!isEmployee && !isAhiIk) {
-      return NextResponse.redirect(new URL('/', request.url))
+    // AHİ-İK kontrolü (sadece şirketler için)
+    const ahiIkPaths = ['/digital-hr', '/workers', '/pdks', '/leave-tracking', '/tasks', '/branches', '/departments', '/statistics']
+    const isAhiIkPath = ahiIkPaths.some(path => pathname.startsWith(path))
+    
+    if (isAhiIkPath) {
+      const isCompany = userData?.role?.type === 'authenticated'
+      const isEmployee = userData?.role?.type === 'employee'
+      const isAhiIk = isCompany && userData?.ahiIkMember === true
+
+      // Şirketler sadece AHİ-İK'ya tanımlı ise erişebilir
+      // Employee her zaman erişebilir
+      if (isCompany && !isAhiIk) {
+        return NextResponse.redirect(new URL('/company-dashboard', request.url))
+      }
+      
+      // Employee değilse ve AHİ-İK şirket değilse erişemez
+      if (!isEmployee && !isAhiIk) {
+        return NextResponse.redirect(new URL('/', request.url))
+      }
     }
   }
 

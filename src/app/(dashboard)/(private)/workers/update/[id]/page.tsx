@@ -43,6 +43,9 @@ interface WorkerFormData {
   isDisabled: boolean
   isForeigner: boolean
   salary: string
+  changePassword: boolean
+  newPassword: string
+  confirmPassword: string
 }
 
 const UpdateWorkerPage = ({ params }: { params: Promise<{ id: string }> }) => {
@@ -68,7 +71,10 @@ const UpdateWorkerPage = ({ params }: { params: Promise<{ id: string }> }) => {
     isRetired: false,
     isDisabled: false,
     isForeigner: false,
-    salary: ''
+    salary: '',
+    changePassword: false,
+    newPassword: '',
+    confirmPassword: ''
   })
 
   const router = useRouter()
@@ -139,6 +145,25 @@ const UpdateWorkerPage = ({ params }: { params: Promise<{ id: string }> }) => {
     setLoading(true)
     setError(null)
 
+    // Şifre değiştirme kontrolü
+    if (formData.changePassword) {
+      if (!formData.newPassword || !formData.confirmPassword) {
+        setError('Lütfen yeni şifre ve şifre tekrarını girin')
+        setLoading(false)
+        return
+      }
+      if (formData.newPassword !== formData.confirmPassword) {
+        setError('Şifreler eşleşmiyor')
+        setLoading(false)
+        return
+      }
+      if (formData.newPassword.length < 6) {
+        setError('Şifre en az 6 karakter olmalıdır')
+        setLoading(false)
+        return
+      }
+    }
+
     try {
       // 1. Photo upload if new photo
       let photoId: number | null = null
@@ -169,7 +194,10 @@ const UpdateWorkerPage = ({ params }: { params: Promise<{ id: string }> }) => {
           isForeigner: formData.isForeigner,
           salary: formData.salary ? parseFloat(formData.salary) : undefined,
           department: formData.department || undefined,
-          photo: photoId || undefined
+          photo: photoId || undefined,
+          // Şifre değiştirme
+          changePassword: formData.changePassword,
+          newPassword: formData.changePassword ? formData.newPassword : undefined
         }
       }
 
@@ -405,6 +433,53 @@ const UpdateWorkerPage = ({ params }: { params: Promise<{ id: string }> }) => {
                 }
                 label='Yabancı'
               />
+            </Grid>
+
+            {/* Şifre Değiştirme Bölümü */}
+            <Grid item xs={12}>
+              <Box sx={{ 
+                border: '1px solid', 
+                borderColor: 'divider', 
+                borderRadius: 1, 
+                p: 3, 
+                mt: 2,
+                backgroundColor: 'action.hover'
+              }}>
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={formData.changePassword}
+                      onChange={e => handleChange('changePassword', e.target.checked)}
+                      color='warning'
+                    />
+                  }
+                  label='Şifre Değiştir (Çalışan şifresini unuttuğunda kullanın)'
+                />
+
+                {formData.changePassword && (
+                  <Grid container spacing={3} sx={{ mt: 1 }}>
+                    <Grid item xs={12} md={6}>
+                      <CustomTextField
+                        fullWidth
+                        type='password'
+                        label='Yeni Şifre'
+                        value={formData.newPassword}
+                        onChange={e => handleChange('newPassword', e.target.value)}
+                        helperText='Minimum 6 karakter'
+                      />
+                    </Grid>
+                    <Grid item xs={12} md={6}>
+                      <CustomTextField
+                        fullWidth
+                        type='password'
+                        label='Yeni Şifre Tekrar'
+                        value={formData.confirmPassword}
+                        onChange={e => handleChange('confirmPassword', e.target.value)}
+                      />
+                    </Grid>
+                  </Grid>
+                )}
+              </Box>
             </Grid>
 
             {error && (

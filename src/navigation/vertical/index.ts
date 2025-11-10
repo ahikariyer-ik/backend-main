@@ -11,11 +11,32 @@ interface MenuItem {
 }
 
 const getNavigation = (): MenuItem[] => [
+  // Çalışan (Worker) Menüsü
+  {
+    title: 'Ana Sayfa',
+    icon: 'tabler-home',
+    path: '/worker-dashboard',
+    visible: () => authService.isWorker()
+  },
+  {
+    title: 'İzin Taleplerim',
+    icon: 'tabler-calendar',
+    path: '/worker-leave-requests',
+    visible: () => authService.isWorker()
+  },
+  {
+    title: 'Görevlerim',
+    icon: 'tabler-clipboard-list',
+    path: '/worker-tasks',
+    visible: () => authService.isWorker()
+  },
+  
+  // Admin/Employee Menüsü (Worker bu menüleri GÖREMEMELİ!)
   {
     title: 'Sayfalar',
     icon: 'tabler-file',
     path: '/pages',
-    visible: () => authService.isEmployee(),
+    visible: () => !authService.isWorker() && authService.isEmployee(),
     children: [
       {
         title: 'Hakkımızda',
@@ -43,7 +64,7 @@ const getNavigation = (): MenuItem[] => [
     title: 'Özellikler',
     icon: 'tabler-list',
     path: '/datas',
-    visible: () => authService.isEmployee(),
+    visible: () => !authService.isWorker() && authService.isEmployee(),
     children: [
       {
         title: 'Sektörler',
@@ -76,7 +97,7 @@ const getNavigation = (): MenuItem[] => [
     title: 'Hizmetler',
     icon: 'tabler-briefcase',
     path: '/services',
-    visible: () => authService.isEmployee(),
+    visible: () => !authService.isWorker() && authService.isEmployee(),
     children: [
       {
         title: 'Hizmet Listesi',
@@ -96,7 +117,7 @@ const getNavigation = (): MenuItem[] => [
     title: 'İnsan Kaynakları',
     icon: 'tabler-users',
     path: '/statistics',
-    visible: () => authService.isAhiIk() || authService.isEmployee(),
+    visible: () => !authService.isWorker() && (authService.isAhiIk() || authService.isEmployee()),
     children: [
       {
         title: 'Ana Sayfa',
@@ -164,7 +185,7 @@ const getNavigation = (): MenuItem[] => [
     title: 'Kullanıcı Yönetim',
     icon: 'tabler-users',
     path: '/users',
-    visible: () => authService.isEmployee(),
+    visible: () => !authService.isWorker() && authService.isEmployee(),
     children: [
       {
         title: 'Kullanıcılar',
@@ -182,7 +203,7 @@ const getNavigation = (): MenuItem[] => [
     title: 'Demo Taleplerim',
     icon: 'tabler-phone-call',
     path: '/demo-requests',
-    visible: () => authService.isEmployee()
+    visible: () => !authService.isWorker() && authService.isEmployee()
   }
 ]
 

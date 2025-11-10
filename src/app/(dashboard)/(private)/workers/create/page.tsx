@@ -44,6 +44,9 @@ interface WorkerFormData {
   isDisabled: boolean
   isForeigner: boolean
   salary: string
+  password: string
+  confirmPassword: string
+  createUserAccount: boolean
 }
 
 const CreateWorkerPage = () => {
@@ -66,7 +69,10 @@ const CreateWorkerPage = () => {
     isRetired: false,
     isDisabled: false,
     isForeigner: false,
-    salary: ''
+    salary: '',
+    password: '',
+    confirmPassword: '',
+    createUserAccount: true
   })
 
   const [formErrors, setFormErrors] = useState<Partial<Record<keyof WorkerFormData, boolean>>>({})
@@ -115,23 +121,38 @@ const CreateWorkerPage = () => {
     setFormErrors({})
 
     // Validation
-    console.log('Form data before validation:', formData)
-    console.log('Form data email:', formData.email, 'type:', typeof formData.email)
-    
     const errors: Partial<Record<keyof WorkerFormData, boolean>> = {}
     if (!formData.firstName) errors.firstName = true
     if (!formData.lastName) errors.lastName = true
     if (!formData.email) errors.email = true
     if (!formData.hireDate) errors.hireDate = true
+    
+    // Kullanıcı hesabı oluşturulacaksa şifre kontrolü
+    if (formData.createUserAccount) {
+      if (!formData.password) {
+        errors.password = true
+      }
+      if (!formData.confirmPassword) {
+        errors.confirmPassword = true
+      }
+      if (formData.password && formData.confirmPassword && formData.password !== formData.confirmPassword) {
+        setError('Şifreler eşleşmiyor')
+        setLoading(false)
+        return
+      }
+      if (formData.password && formData.password.length < 6) {
+        setError('Şifre en az 6 karakter olmalıdır')
+        setLoading(false)
+        return
+      }
+    }
 
     if (Object.keys(errors).length > 0) {
       setFormErrors(errors)
-      setError('Lütfen zorunlu alanları doldurun: ' + Object.keys(errors).join(', '))
+      setError('Lütfen zorunlu alanları doldurun')
       setLoading(false)
       return
     }
-
-    console.log('Validation passed! Email:', formData.email)
 
     try {
       const companyProfile = authService.getCompanyProfile()
@@ -139,12 +160,7 @@ const CreateWorkerPage = () => {
         throw new Error('Şirket profili bulunamadı')
       }
 
-      console.log('Company profile found:', companyProfile.id)
-      
-      // NOT: User account oluşturma şimdilik devre dışı - şifre sistemi için farklı yöntem uygulanacak
-      let userId: number | null = null
-
-      // 2. Photo upload
+      // Photo upload
       let photoId: number | null = null
       if (formData.photo) {
         const formDataUpload = new FormData()
@@ -157,7 +173,7 @@ const CreateWorkerPage = () => {
         photoId = uploadResponse.data[0].id
       }
 
-      // 2. Worker oluştur
+      // Worker oluştur (user hesabı da oluşturulacak)
       const workerPayload: any = {
         data: {
           firstName: formData.firstName,
@@ -175,12 +191,14 @@ const CreateWorkerPage = () => {
           salary: formData.salary ? parseFloat(formData.salary) : undefined,
           isActive: true,
           company: companyProfile.id,
-          photo: photoId || undefined
-          // NOT: user ilişkisi kaldırıldı - şifre sistemi için farklı yöntem uygulanacak
+          photo: photoId || undefined,
+          // Kullanıcı hesabı bilgileri
+          createUserAccount: formData.createUserAccount,
+          password: formData.createUserAccount ? formData.password : undefined
         }
       }
 
-     await axiosClient.post('/api/workers', workerPayload)
+      await axiosClient.post('/api/workers', workerPayload)
 
 
       router.push('/workers/list')
@@ -369,6 +387,48 @@ const CreateWorkerPage = () => {
               />
             </Grid>
 
+            {/* Kullanıcı Hesabı Oluştur */}
+            <Grid item xs={12}>
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={formData.createUserAccount}
+                    onChange={e => handleChange('createUserAccount', e.target.checked)}
+                  />
+                }
+                label='Çalışan için kullanıcı hesabı oluştur (Sisteme giriş yapabilmesi için)'
+              />
+            </Grid>
+
+            {/* Şifre Alanları - Sadece kullanıcı hesabı oluşturulacaksa göster */}
+            {formData.createUserAccount && (
+              <>
+                <Grid item xs={12} md={6}>
+                  <CustomTextField
+                    fullWidth
+                    type='password'
+                    label='Şifre'
+                    value={formData.password}
+                    onChange={e => handleChange('password', e.target.value)}
+                    required
+                    error={formErrors.password}
+                    helperText='Minimum 6 karakter'
+                  />
+                </Grid>
+
+                <Grid item xs={12} md={6}>
+                  <CustomTextField
+                    fullWidth
+                    type='password'
+                    label='Şifre Tekrar'
+                    value={formData.confirmPassword}
+                    onChange={e => handleChange('confirmPassword', e.target.value)}
+                    required
+                    error={formErrors.confirmPassword}
+                  />
+                </Grid>
+              </>
+            )}
 
             {/* Emekli */}
             <Grid item xs={12} md={6}>

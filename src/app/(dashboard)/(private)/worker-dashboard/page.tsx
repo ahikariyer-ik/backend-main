@@ -18,6 +18,16 @@ import { authService } from '@/services'
 // Services
 import { taskService } from '@/services/task.service'
 import { leaveRequestService } from '@/services/leave-request.service'
+import { type WorkerDocuments } from '@/services/workers.service'
+
+// Belge türü etiketleri
+const documentTypeLabels: Record<string, string> = {
+  criminalRecordDoc: 'Adli Sicil',
+  populationRegistryDoc: 'Nüfus Kaydı',
+  identityDoc: 'Kimlik',
+  residenceDoc: 'İkametgah',
+  militaryDoc: 'Askerlik'
+}
 
 const WorkerDashboardPage = () => {
   // States
@@ -25,6 +35,7 @@ const WorkerDashboardPage = () => {
   const [tasks, setTasks] = useState<any[]>([])
   const [leaveRequests, setLeaveRequests] = useState<any[]>([])
   const [remainingLeave, setRemainingLeave] = useState<any>(null)
+  const [documents, setDocuments] = useState<WorkerDocuments | null>(null)
   const [loading, setLoading] = useState(true)
 
   // Fetch data
@@ -38,13 +49,22 @@ const WorkerDashboardPage = () => {
         const workerResponse = await axiosClient.get('/api/workers', {
           params: {
             'filters[user][id]': user.id,
-            populate: ['user', 'company', 'department', 'branch', 'position']
+            populate: ['user', 'company', 'department', 'branch', 'position', 'criminalRecordDoc', 'populationRegistryDoc', 'identityDoc', 'residenceDoc', 'militaryDoc']
           }
         })
 
         if (workerResponse.data.data?.[0]) {
           const worker = workerResponse.data.data[0]
           setWorkerData(worker)
+          
+          // Belgeleri ayarla
+          setDocuments({
+            criminalRecordDoc: worker.criminalRecordDoc || null,
+            populationRegistryDoc: worker.populationRegistryDoc || null,
+            identityDoc: worker.identityDoc || null,
+            residenceDoc: worker.residenceDoc || null,
+            militaryDoc: worker.militaryDoc || null
+          })
 
           // Görevlerimi çek
           const tasksResponse = await taskService.getMyTasks()
@@ -99,8 +119,31 @@ const WorkerDashboardPage = () => {
       case 'pending': return 'warning'
       case 'approved': return 'success'
       case 'rejected': return 'error'
-      default: return 'default'
-    }
+    default: return 'default'
+  }
+}
+
+  const handleViewDocument = (url: string, name: string) => {
+    const fullUrl = `${process.env.NEXT_PUBLIC_API_URL}${url}`
+    window.open(fullUrl, '_blank')
+  }
+
+  const handleDownloadDocument = (url: string, name: string) => {
+    const fullUrl = `${process.env.NEXT_PUBLIC_API_URL}${url}`
+    const link = document.createElement('a')
+    link.href = fullUrl
+    link.download = name
+    link.target = '_blank'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }
+
+  const calculateDocumentCompletionPercentage = () => {
+    if (!documents) return 0
+    const totalDocs = 5
+    const uploadedDocs = Object.values(documents).filter((doc) => doc !== null).length
+    return Math.round((uploadedDocs / totalDocs) * 100)
   }
 
   return (
@@ -335,6 +378,98 @@ const WorkerDashboardPage = () => {
           </Grid>
         </>
       )}
+
+      {/* Özlük Belgeleri */}
+      <Grid item xs={12}>
+        <Card>
+          <CardContent>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+              <Typography variant='h6'>Özlük Belgelerim</Typography>
+              {documents && (
+                <Chip 
+                  label={`%${calculateDocumentCompletionPercentage()} Tamamlandı`}
+                  color={calculateDocumentCompletionPercentage() === 100 ? 'success' : 'warning'}
+                  sx={{ fontWeight: 600 }}
+                />
+              )}
+            </Box>
+
+            {documents ? (
+              <Grid container spacing={3}>
+                {Object.entries(documentTypeLabels).map(([docType, label]) => {
+                  const doc = documents[docType as keyof WorkerDocuments]
+                  const uploaded = !!doc
+
+                  return (
+                    <Grid item xs={12} sm={6} md={4} key={docType}>
+                      <Card 
+                        variant='outlined' 
+                        sx={{ 
+                          borderColor: uploaded ? 'success.main' : 'error.main',
+                          borderWidth: 2
+                        }}
+                      >
+                        <CardContent>
+                          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+                            <Typography variant='subtitle1' sx={{ fontWeight: 600 }}>
+                              {label}
+                            </Typography>
+                            <Box
+                              sx={{
+                                bgcolor: uploaded ? 'success.main' : 'error.main',
+                                color: 'white',
+                                width: 32,
+                                height: 32,
+                                borderRadius: '50%',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center'
+                              }}
+                            >
+                              <i className={uploaded ? 'tabler-check' : 'tabler-x'} style={{ fontSize: 18 }} />
+                            </Box>
+                          </Box>
+
+                          {uploaded && doc ? (
+                            <Box sx={{ display: 'flex', gap: 1 }}>
+                              <Button
+                                variant='outlined'
+                                size='small'
+                                fullWidth
+                                startIcon={<i className='tabler-eye' />}
+                                onClick={() => handleViewDocument(doc.url, doc.name)}
+                              >
+                                Görüntüle
+                              </Button>
+                              <Button
+                                variant='outlined'
+                                size='small'
+                                fullWidth
+                                startIcon={<i className='tabler-download' />}
+                                onClick={() => handleDownloadDocument(doc.url, doc.name)}
+                              >
+                                İndir
+                              </Button>
+                            </Box>
+                          ) : (
+                            <Typography variant='body2' color='text.secondary' align='center'>
+                              Henüz yüklenmemiş
+                            </Typography>
+                          )}
+                        </CardContent>
+                      </Card>
+                    </Grid>
+                  )
+                })}
+              </Grid>
+            ) : (
+              <Typography variant='body2' color='text.secondary'>
+                Belge bilgisi yüklenemedi
+              </Typography>
+            )}
+          </CardContent>
+        </Card>
+      </Grid>
     </Grid>
   )
 }
