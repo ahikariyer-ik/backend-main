@@ -16,6 +16,7 @@ export interface WorkerDocuments {
   identityDoc: DocumentFile | null;
   residenceDoc: DocumentFile | null;
   militaryDoc: DocumentFile | null;
+  employmentStartDoc: DocumentFile | null;
 }
 
 // Çalışan tipi

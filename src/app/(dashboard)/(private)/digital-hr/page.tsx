@@ -41,7 +41,8 @@ const documentTypes = [
   { value: 'populationRegistryDoc', label: 'Nüfus Kaydı' },
   { value: 'identityDoc', label: 'Kimlik' },
   { value: 'residenceDoc', label: 'İkametgah' },
-  { value: 'militaryDoc', label: 'Askerlik' }
+  { value: 'militaryDoc', label: 'Askerlik' },
+  { value: 'employmentStartDoc', label: 'İşe Giriş Bildirgesi' }
 ]
 
 const documentTypeLabels: Record<string, string> = {
@@ -49,7 +50,8 @@ const documentTypeLabels: Record<string, string> = {
   populationRegistryDoc: 'Nüfus Kaydı',
   identityDoc: 'Kimlik',
   residenceDoc: 'İkametgah',
-  militaryDoc: 'Askerlik'
+  militaryDoc: 'Askerlik',
+  employmentStartDoc: 'İşe Giriş Bildirgesi'
 }
 
 const DigitalHRPage = () => {
@@ -272,7 +274,7 @@ const DigitalHRPage = () => {
 
   // Tamamlanma yüzdesi hesapla
   const calculateCompletionPercentage = (documents: Worker['documents']) => {
-    const totalDocs = 5
+    const totalDocs = 6
     const uploadedDocs = Object.values(documents).filter((doc) => doc !== null).length
     return Math.round((uploadedDocs / totalDocs) * 100)
   }
@@ -321,6 +323,7 @@ const DigitalHRPage = () => {
                   <TableCell align='center'>Kimlik</TableCell>
                   <TableCell align='center'>İkametgah</TableCell>
                   <TableCell align='center'>Askerlik</TableCell>
+                  <TableCell align='center'>İşe Giriş Bildirgesi</TableCell>
                   <TableCell align='center'>Tamamlanma</TableCell>
                   <TableCell align='center'>İşlemler</TableCell>
                 </TableRow>
@@ -381,6 +384,9 @@ const DigitalHRPage = () => {
                       </TableCell>
                       <TableCell align='center'>
                         <DocumentStatusIcon document={worker.documents.militaryDoc} docType='militaryDoc' workerId={worker.id} />
+                      </TableCell>
+                      <TableCell align='center'>
+                        <DocumentStatusIcon document={worker.documents.employmentStartDoc} docType='employmentStartDoc' workerId={worker.id} />
                       </TableCell>
                       <TableCell align='center'>
                         <Chip
