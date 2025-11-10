@@ -182,6 +182,50 @@ const getNavigation = (): MenuItem[] => [
     ]
   },
   {
+    title: 'Kurum Yönetimi',
+    icon: 'tabler-building-community',
+    path: '/institution-management',
+    visible: () => !authService.isWorker() && authService.isAhiIk(),
+    children: [
+      {
+        title: 'Kurumlarım',
+        icon: 'tabler-building',
+        path: '/institution-management/institutions',
+        visible: () => authService.isAhiIk()
+      },
+      {
+        title: 'Konutlarım',
+        icon: 'tabler-home',
+        path: '/institution-management/properties',
+        visible: () => authService.isAhiIk()
+      },
+      {
+        title: 'Araçlarım',
+        icon: 'tabler-car',
+        path: '/institution-management/vehicles',
+        visible: () => authService.isAhiIk()
+      },
+      {
+        title: 'Kararlar',
+        icon: 'tabler-clipboard-text',
+        path: '/institution-management/decisions',
+        visible: () => authService.isAhiIk()
+      },
+      {
+        title: 'Giden Evraklar',
+        icon: 'tabler-file-export',
+        path: '/institution-management/outgoing-documents',
+        visible: () => authService.isAhiIk()
+      },
+      {
+        title: 'Gelen Evraklar',
+        icon: 'tabler-file-import',
+        path: '/institution-management/incoming-documents',
+        visible: () => authService.isAhiIk()
+      }
+    ]
+  },
+  {
     title: 'Kullanıcı Yönetim',
     icon: 'tabler-users',
     path: '/users',
