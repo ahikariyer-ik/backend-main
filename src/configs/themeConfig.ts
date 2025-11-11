@@ -50,9 +50,9 @@ export type Config = {
 }
 
 const themeConfig: Config = {
-  templateName: 'AhiKariyer',
+  templateName: 'Kurum360',
   homePageUrl: '/',
-  settingsCookieName: 'ahikariyer',
+  settingsCookieName: 'kurum360',
   mode: 'light', // 'system', 'light', 'dark'
   skin: 'default', // 'default', 'bordered'
   semiDark: false, // true, false

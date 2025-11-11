@@ -166,7 +166,6 @@ const UsersListPage = () => {
                 <TableCell>E-posta</TableCell>
                 <TableCell>Şirket</TableCell>
                 <TableCell>Durum</TableCell>
-                <TableCell>İlan Hakları</TableCell>
                 <TableCell>AHİ-İK</TableCell>
                 <TableCell>İşlemler</TableCell>
               </TableRow>
@@ -224,19 +223,6 @@ const UsersListPage = () => {
                         color='success'
                         size='small'
                       />
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {user.postingRights ? (
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <Chip
-                          label={`${user.postingRights.postingsUsed} / ${user.postingRights.postingQuota}`}
-                          color='info'
-                          size='small'
-                        />
-                      </Box>
-                    ) : (
-                      '-'
                     )}
                   </TableCell>
                   <TableCell>

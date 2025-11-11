@@ -31,7 +31,6 @@ import { rolesService } from '@/services/roles.service'
 
 interface ExtendedCreateUserDTO extends CreateUserDTO {
   companyName?: string
-  postingQuota?: number
 }
 
 const CreateUserPage = () => {
@@ -47,9 +46,7 @@ const CreateUserPage = () => {
     confirmed: true,
     blocked: false,
     ahiIkMember: false, // Yeni kullanıcılar AHİ-İK'ya tanımlı değil
-    companyName: undefined,
-    postingQuota: 0  // undefined yerine 0
-
+    companyName: undefined
   })
 
   const [formErrors, setFormErrors] = useState<Partial<Record<keyof ExtendedCreateUserDTO, boolean>>>({})
@@ -107,8 +104,7 @@ const CreateUserPage = () => {
           blocked: formData.blocked,
           ahiIkMember: false, // Yeni kullanıcılar AHİ-İK'ya tanımlı değil
           role: formData.role,
-          companyName: formData.companyName || formData.username,
-          postingRights: 0  // Her zaman 0
+          companyName: formData.companyName || formData.username
         }
       }
 
@@ -203,17 +199,6 @@ const CreateUserPage = () => {
                   onChange={e => handleChange('companyName', e.target.value)}
                 />
               </FormControl>
-            </Grid>
-
-            <Grid item xs={12}>
-              <CustomTextField
-                fullWidth
-                type='number'
-                label='İlan Kotası'
-                value={0}
-                disabled
-                helperText='Yeni kullanıcılar 0 kota ile oluşturulur. Kullanıcı düzenleme sayfasından kotayı artırabilirsiniz.'
-              />
             </Grid>
 
             <Grid item xs={12}>

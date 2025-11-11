@@ -26,11 +26,6 @@ export interface StrapiUser {
       name: string;
     };
   } | null;
-  postingRights?: {
-    id: number;
-    postingQuota: number;
-    postingsUsed: number;
-  } | null;
 }
 
 export interface CreateUserDTO {
@@ -41,6 +36,7 @@ export interface CreateUserDTO {
   confirmed?: boolean;
   blocked?: boolean;
   ahiIkMember?: boolean;
+  companyName?: string;
 }
 
 export interface UpdateUserDTO extends Partial<Omit<CreateUserDTO, 'password'>> {
@@ -48,7 +44,6 @@ export interface UpdateUserDTO extends Partial<Omit<CreateUserDTO, 'password'>> 
   password?: string;
   ahiIkMember?: boolean;
   companyProfile?: any;
-  postingRights?: any;
 }
 
 interface StrapiResponse<T> {
@@ -83,7 +78,7 @@ class UsersService {
             }
           }
         },
-        populate: ['companyProfile', 'companyProfile.logo', 'companyProfile.sector', 'postingRights']
+        populate: ['companyProfile', 'companyProfile.logo', 'companyProfile.sector']
       }
     });
     return response.data;
@@ -92,7 +87,7 @@ class UsersService {
   public async getUser(documentId: string): Promise<StrapiResponse<StrapiUser>> {
     const response = await axiosClient.get(`/api/users/${documentId}`, {
       params: {
-        populate: ['companyProfile', 'companyProfile.logo', 'companyProfile.sector', 'postingRights']
+        populate: ['companyProfile', 'companyProfile.logo', 'companyProfile.sector']
       }
     });
     return response.data;
@@ -119,9 +114,9 @@ class UsersService {
     const filteredData: any = {};
     
     Object.entries(cleanData).forEach(([key, value]) => {
-      // companyProfile ve postingRights nested objeler olduğu için özel işleme
-      if (key === 'companyProfile' || key === 'postingRights') {
-        // Nested objeleri olduğu gibi gönder (undefined/null kontrolü içeride yapılır)
+      // companyProfile nested obje olduğu için özel işleme
+      if (key === 'companyProfile') {
+        // Nested objeyi olduğu gibi gönder (undefined/null kontrolü içeride yapılır)
         if (value !== undefined && value !== null) {
           filteredData[key] = value;
         }

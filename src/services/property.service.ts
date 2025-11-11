@@ -6,14 +6,18 @@ export interface Property {
   institution?: {
     id: number
     name: string
+    taxNumber?: string
   }
   photo?: {
     id: number
     url: string
     name: string
   }
-  usageType: 'rented' | 'foundation_use' | 'usufruct'
+  usageType?: string
   address?: string
+  uavtAddress?: string
+  daskPolicyNumber?: string
+  acquisitionMethod?: string
   daskPolicy?: {
     id: number
     url: string
@@ -63,6 +67,8 @@ export const propertyService = {
     await axiosClient.delete(`/api/properties/${id}`)
   }
 }
+
+
 
 
 

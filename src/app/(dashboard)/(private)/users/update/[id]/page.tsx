@@ -36,9 +36,6 @@ interface ExtendedUpdateUserDTO extends Omit<UpdateUserDTO, 'documentId'> {
     ahiIkStartDate?: string;
     ahiIkEndDate?: string;
   };
-  postingRights?: {
-    postingQuota?: number;
-  };
 }
 
 const UpdateUserPage = ({ params }: { params: Promise<{ id: string }> }) => {
@@ -65,9 +62,6 @@ const UpdateUserPage = ({ params }: { params: Promise<{ id: string }> }) => {
       ahiIkEnabled: false,
       ahiIkStartDate: '',
       ahiIkEndDate: ''
-    },
-    postingRights: {
-      postingQuota: 0
     }
   })
 
@@ -119,11 +113,6 @@ const UpdateUserPage = ({ params }: { params: Promise<{ id: string }> }) => {
           ahiIkEnabled: false,
           ahiIkStartDate: '',
           ahiIkEndDate: ''
-        },
-        postingRights: userData.postingRights ? {
-          postingQuota: userData.postingRights.postingQuota
-        } : {
-          postingQuota: 0
         }
       })
     } catch (error: any) {
@@ -162,7 +151,6 @@ const UpdateUserPage = ({ params }: { params: Promise<{ id: string }> }) => {
 
     try {
       // companyProfile'ı her zaman gönder (API'de varsa güncellenecek)
-      // postingRights güncellenmesi için updatedCompanyProfile gerekli
       const payload: UpdateUserDTO = {
         documentId: formData.id,
         username: formData.username,
@@ -183,9 +171,6 @@ const UpdateUserPage = ({ params }: { params: Promise<{ id: string }> }) => {
           ahiIkEnabled: formData.companyProfile?.ahiIkEnabled || false,
           ahiIkStartDate: formData.companyProfile?.ahiIkStartDate || null,
           ahiIkEndDate: formData.companyProfile?.ahiIkEndDate || null
-        },
-        postingRights: {
-          postingQuota: formData.postingRights?.postingQuota ?? 0
         }
       }
 

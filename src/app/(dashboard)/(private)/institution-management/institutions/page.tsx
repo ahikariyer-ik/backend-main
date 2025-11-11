@@ -10,6 +10,8 @@ const InstitutionsPage = () => {
   const [error, setError] = useState<string | null>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [editMode, setEditMode] = useState(false)
+  const [editingId, setEditingId] = useState<string | null>(null)
   const [formData, setFormData] = useState({ name: '', address: '', foundationDate: '', taxNumber: '', sgkRegistrationNumber: '', itoRegistrationNumber: '' })
   const [files, setFiles] = useState({ activityReport: null as File | null, foundationDeed: null as File | null, internalAuditReports: [] as File[], signatureCircular: null as File | null })
   const [viewDocumentDialog, setViewDocumentDialog] = useState(false)
@@ -48,14 +50,58 @@ const InstitutionsPage = () => {
         const uploadPromises = files.internalAuditReports.map(file => uploadFile(file))
         data.internalAuditReports = await Promise.all(uploadPromises)
       }
-      await institutionService.create(data)
+      if (editMode && editingId) {
+        await institutionService.update(editingId, data)
+      } else {
+        await institutionService.create(data)
+      }
       await loadInstitutions()
       setDialogOpen(false)
     } catch (err: any) {
-      alert(err.response?.data?.error?.message || 'Kurum oluşturulurken bir hata oluştu')
+      alert(err.response?.data?.error?.message || (editMode ? 'Kurum güncellenirken bir hata oluştu' : 'Kurum oluşturulurken bir hata oluştu'))
     } finally {
       setSaving(false)
     }
+  }
+
+  const handleEdit = (institution: Institution) => {
+    setEditMode(true)
+    setEditingId(institution.documentId)
+    setFormData({
+      name: institution.name,
+      address: institution.address,
+      foundationDate: institution.foundationDate,
+      taxNumber: institution.taxNumber,
+      sgkRegistrationNumber: institution.sgkRegistrationNumber || '',
+      itoRegistrationNumber: institution.itoRegistrationNumber || ''
+    })
+    setFiles({ 
+      activityReport: null, 
+      foundationDeed: null, 
+      internalAuditReports: [], 
+      signatureCircular: null 
+    })
+    setDialogOpen(true)
+  }
+
+  const handleOpenNewDialog = () => {
+    setEditMode(false)
+    setEditingId(null)
+    setFormData({ 
+      name: '', 
+      address: '', 
+      foundationDate: '', 
+      taxNumber: '', 
+      sgkRegistrationNumber: '', 
+      itoRegistrationNumber: '' 
+    })
+    setFiles({ 
+      activityReport: null, 
+      foundationDeed: null, 
+      internalAuditReports: [], 
+      signatureCircular: null 
+    })
+    setDialogOpen(true)
   }
 
   const handleViewDocument = (doc: any, label: string, institutionId: string, fieldName: string) => {
@@ -114,7 +160,7 @@ const InstitutionsPage = () => {
   return (
     <>
       <Card>
-        <CardHeader title="Kurumlarım" action={<Button variant="contained" color="primary" onClick={() => { setFormData({ name: '', address: '', foundationDate: '', taxNumber: '', sgkRegistrationNumber: '', itoRegistrationNumber: '' }); setFiles({ activityReport: null, foundationDeed: null, internalAuditReports: [], signatureCircular: null }); setDialogOpen(true) }}>+ Yeni Kurum</Button>} />
+        <CardHeader title="Kurumlarım" action={<Button variant="contained" color="primary" onClick={handleOpenNewDialog}>+ Yeni Kurum</Button>} />
         <CardContent>
           {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
           <TableContainer component={Paper}>
@@ -163,6 +209,7 @@ const InstitutionsPage = () => {
                       <TableCell>{new Date(inst.foundationDate).toLocaleDateString('tr-TR')}</TableCell>
                       <TableCell>{inst.taxNumber}</TableCell>
                       <TableCell align="right">
+                        <IconButton size="small" color="primary" onClick={() => handleEdit(inst)}><i className="tabler-edit" /></IconButton>
                         <IconButton size="small" color="error" onClick={() => handleDelete(inst.documentId)}><i className="tabler-trash" /></IconButton>
                       </TableCell>
                     </TableRow>
@@ -175,7 +222,7 @@ const InstitutionsPage = () => {
       </Card>
 
       <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="md" fullWidth>
-        <DialogTitle>Yeni Kurum Ekle</DialogTitle>
+        <DialogTitle>{editMode ? 'Kurum Düzenle' : 'Yeni Kurum Ekle'}</DialogTitle>
         <DialogContent>
           <Grid container spacing={3} sx={{ mt: 1 }}>
             <Grid item xs={12}><TextField fullWidth label="Kurumun Adı" required value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} /></Grid>
@@ -192,7 +239,7 @@ const InstitutionsPage = () => {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setDialogOpen(false)} disabled={saving}>İptal</Button>
-          <Button onClick={handleSubmit} variant="contained" disabled={saving}>{saving ? 'Kaydediliyor...' : 'Kaydet'}</Button>
+          <Button onClick={handleSubmit} variant="contained" disabled={saving}>{saving ? (editMode ? 'Güncelleniyor...' : 'Kaydediliyor...') : (editMode ? 'Güncelle' : 'Kaydet')}</Button>
         </DialogActions>
       </Dialog>
 

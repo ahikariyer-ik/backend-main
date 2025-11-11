@@ -41,14 +41,21 @@ const PropertiesPage = () => {
   const [saving, setSaving] = useState(false)
   const [formData, setFormData] = useState({
     institution: '',
-    usageType: 'rented' as 'rented' | 'foundation_use' | 'usufruct',
-    address: ''
+    usageType: '',
+    address: '',
+    uavtAddress: '',
+    daskPolicyNumber: '',
+    acquisitionMethod: ''
   })
+  const [editMode, setEditMode] = useState(false)
+  const [editingId, setEditingId] = useState<string | null>(null)
   const [files, setFiles] = useState({
     photo: null as File | null,
     daskPolicy: null as File | null,
     titleDeed: null as File | null
   })
+  const [daskQueryDialog, setDaskQueryDialog] = useState(false)
+  const [selectedPropertyForDask, setSelectedPropertyForDask] = useState<Property | null>(null)
 
   // Effects
   useEffect(() => {
@@ -84,10 +91,34 @@ const PropertiesPage = () => {
   }
 
   const handleOpenDialog = () => {
+    setEditMode(false)
+    setEditingId(null)
     setFormData({
       institution: '',
-      usageType: 'rented',
-      address: ''
+      usageType: '',
+      address: '',
+      uavtAddress: '',
+      daskPolicyNumber: '',
+      acquisitionMethod: ''
+    })
+    setFiles({
+      photo: null,
+      daskPolicy: null,
+      titleDeed: null
+    })
+    setDialogOpen(true)
+  }
+
+  const handleEdit = (property: Property) => {
+    setEditMode(true)
+    setEditingId(property.documentId)
+    setFormData({
+      institution: property.institution?.id.toString() || '',
+      usageType: property.usageType || '',
+      address: property.address || '',
+      uavtAddress: property.uavtAddress || '',
+      daskPolicyNumber: property.daskPolicyNumber || '',
+      acquisitionMethod: property.acquisitionMethod || ''
     })
     setFiles({
       photo: null,
@@ -129,11 +160,16 @@ const PropertiesPage = () => {
         data.titleDeed = await uploadFile(files.titleDeed)
       }
 
-      await propertyService.create(data)
+      if (editMode && editingId) {
+        await propertyService.update(editingId, data)
+      } else {
+        await propertyService.create(data)
+      }
+      
       await loadProperties()
       handleCloseDialog()
     } catch (err: any) {
-      alert(err.response?.data?.error?.message || 'Konut oluşturulurken bir hata oluştu')
+      alert(err.response?.data?.error?.message || (editMode ? 'Konut güncellenirken bir hata oluştu' : 'Konut oluşturulurken bir hata oluştu'))
     } finally {
       setSaving(false)
     }
@@ -157,6 +193,31 @@ const PropertiesPage = () => {
       usufruct: 'İntifada'
     }
     return labels[type] || type
+  }
+
+  const handleDaskQuery = (property: Property) => {
+    const taxNumber = property.institution?.taxNumber
+    const daskPolicyNumber = property.daskPolicyNumber
+    
+    if (!taxNumber || !daskPolicyNumber) {
+      alert('DASK sorgulaması için Vergi No ve DASK Poliçe No gereklidir.')
+      return
+    }
+    
+    setSelectedPropertyForDask(property)
+    setDaskQueryDialog(true)
+  }
+
+  const handleCopyToClipboard = (text: string, label: string) => {
+    navigator.clipboard.writeText(text).then(() => {
+      alert(`${label} panoya kopyalandı!`)
+    }).catch(() => {
+      alert('Kopyalama başarısız oldu.')
+    })
+  }
+
+  const handleOpenDaskSite = () => {
+    window.open('https://dask.gov.tr/tr/police-sorgulama', '_blank')
   }
 
   if (loading) {
@@ -230,10 +291,18 @@ const PropertiesPage = () => {
                       <Typography variant="body2" color="text.secondary" gutterBottom>
                         {property.address || 'Adres belirtilmemiş'}
                       </Typography>
-                      <Box mt={2}>
-                        <Chip label={getUsageTypeLabel(property.usageType)} color="primary" size="small" />
-                      </Box>
-                      <Box mt={2} display="flex" justifyContent="flex-end">
+                      {property.usageType && (
+                        <Box mt={2}>
+                          <Chip label={getUsageTypeLabel(property.usageType)} color="primary" size="small" />
+                        </Box>
+                      )}
+                      <Box mt={2} display="flex" justifyContent="flex-end" gap={1}>
+                        <IconButton size="small" color="primary" onClick={() => handleEdit(property)}>
+                          <i className="tabler-edit" />
+                        </IconButton>
+                        <IconButton size="small" color="info" onClick={() => handleDaskQuery(property)}>
+                          <i className="tabler-search" />
+                        </IconButton>
                         <IconButton size="small" color="error" onClick={() => handleDelete(property.documentId)}>
                           <i className="tabler-trash" />
                         </IconButton>
@@ -248,7 +317,7 @@ const PropertiesPage = () => {
       </Card>
 
       <Dialog open={dialogOpen} onClose={handleCloseDialog} maxWidth="md" fullWidth>
-        <DialogTitle>Yeni Konut Ekle</DialogTitle>
+        <DialogTitle>{editMode ? 'Konut Düzenle' : 'Yeni Konut Ekle'}</DialogTitle>
         <DialogContent>
           <Grid container spacing={3} sx={{ mt: 1 }}>
             <Grid item xs={12}>
@@ -269,18 +338,43 @@ const PropertiesPage = () => {
             </Grid>
 
             <Grid item xs={12}>
-              <FormControl fullWidth required>
-                <InputLabel>Kullanım Tipi</InputLabel>
-                <Select
-                  value={formData.usageType}
-                  label="Kullanım Tipi"
-                  onChange={(e) => setFormData({ ...formData, usageType: e.target.value as any })}
-                >
-                  <MenuItem value="rented">Kirada</MenuItem>
-                  <MenuItem value="foundation_use">Vakıf Kullanımında</MenuItem>
-                  <MenuItem value="usufruct">İntifada</MenuItem>
-                </Select>
-              </FormControl>
+              <TextField
+                fullWidth
+                label="UAVT Adresi"
+                value={formData.uavtAddress}
+                onChange={(e) => setFormData({ ...formData, uavtAddress: e.target.value })}
+                placeholder="UAVT adresini giriniz"
+              />
+            </Grid>
+
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="DASK Poliçe Numarası"
+                value={formData.daskPolicyNumber}
+                onChange={(e) => setFormData({ ...formData, daskPolicyNumber: e.target.value })}
+                placeholder="DASK poliçe numarasını giriniz"
+              />
+            </Grid>
+
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Edinme Şekli"
+                value={formData.acquisitionMethod}
+                onChange={(e) => setFormData({ ...formData, acquisitionMethod: e.target.value })}
+                placeholder="Edinme şeklini yazınız (örn: Satın Alma, Bağış, Miras)"
+              />
+            </Grid>
+
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Kullanım Tipi"
+                value={formData.usageType}
+                onChange={(e) => setFormData({ ...formData, usageType: e.target.value })}
+                placeholder="Kullanım tipini yazınız (örn: Kirada, Vakıf Kullanımında, İntifada)"
+              />
             </Grid>
 
             <Grid item xs={12}>
@@ -348,7 +442,113 @@ const PropertiesPage = () => {
             İptal
           </Button>
           <Button onClick={handleSubmit} variant="contained" disabled={saving}>
-            {saving ? 'Kaydediliyor...' : 'Kaydet'}
+            {saving ? (editMode ? 'Güncelleniyor...' : 'Kaydediliyor...') : (editMode ? 'Güncelle' : 'Kaydet')}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={daskQueryDialog} onClose={() => setDaskQueryDialog(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>
+          <Box display="flex" alignItems="center" gap={1}>
+            <i className="tabler-building" style={{ fontSize: 24 }} />
+            <Typography variant="h6">DASK Poliçe Sorgulama</Typography>
+          </Box>
+        </DialogTitle>
+        <DialogContent>
+          {selectedPropertyForDask && (
+            <Box sx={{ py: 2 }}>
+              <Alert severity="info" sx={{ mb: 3 }}>
+                <Typography variant="body2" sx={{ fontWeight: 600, mb: 1 }}>
+                  📋 Sorgulama Adımları:
+                </Typography>
+                <Typography variant="body2" component="ol" sx={{ pl: 2, m: 0 }}>
+                  <li>Aşağıdaki bilgileri kopyalayın</li>
+                  <li>"DASK Sitesini Aç" butonuna tıklayın</li>
+                  <li>Açılan sayfada "Sorgulama Tipi" olarak <strong>"Vergi No / DASK Poliçe No"</strong> seçin</li>
+                  <li>Kopyaladığınız bilgileri yapıştırın ve sorgulayın</li>
+                </Typography>
+              </Alert>
+
+              <Box sx={{ bgcolor: 'action.hover', p: 3, borderRadius: 2, mb: 2 }}>
+                <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                  Kurum Adı
+                </Typography>
+                <Typography variant="h6" sx={{ mb: 3 }}>
+                  {selectedPropertyForDask.institution?.name}
+                </Typography>
+
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                  <Box>
+                    <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                      Vergi Numarası
+                    </Typography>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <TextField
+                        fullWidth
+                        value={selectedPropertyForDask.institution?.taxNumber || ''}
+                        InputProps={{ readOnly: true }}
+                        sx={{ bgcolor: 'background.paper' }}
+                      />
+                      <Button
+                        variant="outlined"
+                        size="small"
+                        onClick={() => handleCopyToClipboard(selectedPropertyForDask.institution?.taxNumber || '', 'Vergi No')}
+                        sx={{ minWidth: 100 }}
+                      >
+                        <i className="tabler-copy" style={{ marginRight: 4 }} /> Kopyala
+                      </Button>
+                    </Box>
+                  </Box>
+
+                  <Box>
+                    <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                      DASK Poliçe Numarası
+                    </Typography>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <TextField
+                        fullWidth
+                        value={selectedPropertyForDask.daskPolicyNumber || ''}
+                        InputProps={{ readOnly: true }}
+                        sx={{ bgcolor: 'background.paper' }}
+                      />
+                      <Button
+                        variant="outlined"
+                        size="small"
+                        onClick={() => handleCopyToClipboard(selectedPropertyForDask.daskPolicyNumber || '', 'DASK Poliçe No')}
+                        sx={{ minWidth: 100 }}
+                      >
+                        <i className="tabler-copy" style={{ marginRight: 4 }} /> Kopyala
+                      </Button>
+                    </Box>
+                  </Box>
+                </Box>
+              </Box>
+
+              {selectedPropertyForDask.address && (
+                <Box sx={{ mb: 2 }}>
+                  <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                    Konut Adresi
+                  </Typography>
+                  <Typography variant="body2">
+                    {selectedPropertyForDask.address}
+                  </Typography>
+                </Box>
+              )}
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions sx={{ p: 3, pt: 0 }}>
+          <Button onClick={() => setDaskQueryDialog(false)}>
+            Kapat
+          </Button>
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={handleOpenDaskSite}
+            startIcon={<i className="tabler-external-link" />}
+            size="large"
+          >
+            DASK Sitesini Aç
           </Button>
         </DialogActions>
       </Dialog>
