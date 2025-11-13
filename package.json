@@ -4,9 +4,9 @@
   "license": "Commercial",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack",
+    "dev": "next dev --turbopack --port 3001",
     "build": "next build",
-    "start": "next start",
+    "start": "next start --port 3001",
     "lint": "next lint",
     "lint:fix": "next lint --fix",
     "format": "prettier --write \"src/**/*.{js,jsx,ts,tsx}\"",
@@ -34,6 +34,7 @@
     "apexcharts": "^4.5.0",
     "classnames": "2.5.1",
     "date-fns": "^4.1.0",
+    "html5-qrcode": "^2.3.8",
     "js-cookie": "^3.0.5",
     "next": "15.1.2",
     "react": "18.3.1",
@@ -42,6 +43,7 @@
     "react-dom": "18.3.1",
     "react-dropzone": "^14.3.8",
     "react-perfect-scrollbar": "1.5.8",
+    "react-qr-code": "^2.0.18",
     "react-toastify": "^11.0.5",
     "react-use": "17.6.0",
     "server-only": "0.0.1"

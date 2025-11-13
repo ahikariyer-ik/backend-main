@@ -81,7 +81,7 @@ const Register = ({ mode }: { mode: SystemMode }) => {
 
     try {
       await authService.registerCompany(username, email, password)
-      const dest = authService.getDashboardUrl() || '/company-dashboard'
+      const dest = authService.getDashboardUrl() || '/statistics'
       router.push(dest)
     } catch (err: any) {
       let errorMessage = 'Kayıt sırasında bir hata oluştu'

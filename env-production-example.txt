@@ -1,0 +1,11 @@
+# API Configuration
+NEXT_PUBLIC_API_URL=https://api.ahikurumsal.com
+NEXT_PUBLIC_STRAPI_API_URL=https://api.ahikurumsal.com
+NEXT_PUBLIC_IMAGE_BASE_URL=https://api.ahikurumsal.com
+
+# Application URL
+NEXT_PUBLIC_APP_URL=https://admin.ahikurumsal.com
+
+# Environment
+NODE_ENV=production
+

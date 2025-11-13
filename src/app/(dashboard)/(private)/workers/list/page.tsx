@@ -31,6 +31,11 @@ import FormControlLabel from '@mui/material/FormControlLabel'
 import TextField from '@mui/material/TextField'
 import Checkbox from '@mui/material/Checkbox'
 import Divider from '@mui/material/Divider'
+import MenuItem from '@mui/material/MenuItem'
+import Select from '@mui/material/Select'
+import InputLabel from '@mui/material/InputLabel'
+import FormControl from '@mui/material/FormControl'
+import Grid from '@mui/material/Grid'
 
 // Component Imports
 import Link from '@components/Link'
@@ -38,6 +43,7 @@ import Link from '@components/Link'
 // Services
 import { axiosClient } from '@/libs/axios'
 import { authService } from '@/services'
+import { branchService, type Branch } from '@/services/branch.service'
 
 interface Worker {
   id: number
@@ -52,6 +58,7 @@ interface Worker {
   hireDate: string
   profession?: string
   branch?: {
+    documentId: string
     name: string
     key?: string
   }
@@ -79,6 +86,11 @@ const WorkersListPage = () => {
   const [noticePay, setNoticePay] = useState(0)
   const [severancePaid, setSeverancePaid] = useState(false)
   const [noticePaid, setNoticePaid] = useState(false)
+  
+  // Filter States
+  const [branches, setBranches] = useState<Branch[]>([])
+  const [selectedBranch, setSelectedBranch] = useState<string>('all')
+  const [nameSearch, setNameSearch] = useState<string>('')
 
   // Hooks
   const router = useRouter()
@@ -86,9 +98,28 @@ const WorkersListPage = () => {
   // Effects
   useEffect(() => {
     loadWorkers()
+    loadBranches()
   }, [])
 
   // Handlers
+  const loadBranches = async () => {
+    try {
+      const companyProfile = authService.getCompanyProfile()
+      if (!companyProfile) return
+
+      const response = await axiosClient.get('/api/branches', {
+        params: {
+          'filters[company][id]': companyProfile.id,
+          'sort[0]': 'name:asc'
+        }
+      })
+
+      setBranches(response.data.data || [])
+    } catch (error: any) {
+      console.error('Şubeler yüklenirken hata:', error)
+    }
+  }
+
   const loadWorkers = async () => {
     try {
       const companyProfile = authService.getCompanyProfile()
@@ -264,6 +295,18 @@ const WorkersListPage = () => {
     }
   }
 
+  // Filter workers based on search and branch selection
+  const filteredWorkers = workers.filter(worker => {
+    // Branch filter
+    const branchMatch = selectedBranch === 'all' || worker.branch?.documentId === selectedBranch
+    
+    // Name search filter
+    const nameMatch = nameSearch.trim() === '' || 
+      `${worker.firstName} ${worker.lastName}`.toLowerCase().includes(nameSearch.toLowerCase())
+    
+    return branchMatch && nameMatch
+  })
+
   if (loading) {
     return <div>Yükleniyor...</div>
   }
@@ -285,6 +328,51 @@ const WorkersListPage = () => {
           </Alert>
         )}
 
+        {/* Filters */}
+        <Grid container spacing={3} sx={{ mb: 4 }}>
+          <Grid item xs={12} sm={6} md={4}>
+            <TextField
+              fullWidth
+              label='İsim Ara'
+              placeholder='Çalışan adı veya soyadı...'
+              value={nameSearch}
+              onChange={(e) => setNameSearch(e.target.value)}
+              InputProps={{
+                startAdornment: <i className='tabler-search' style={{ marginRight: 8 }} />
+              }}
+            />
+          </Grid>
+          <Grid item xs={12} sm={6} md={4}>
+            <FormControl fullWidth>
+              <InputLabel id='branch-filter-label'>Şube Filtrele</InputLabel>
+              <Select
+                labelId='branch-filter-label'
+                value={selectedBranch}
+                label='Şube Filtrele'
+                onChange={(e) => setSelectedBranch(e.target.value)}
+              >
+                <MenuItem value='all'>
+                  <em>Tüm Şubeler</em>
+                </MenuItem>
+                {branches.map((branch) => (
+                  <MenuItem key={branch.documentId} value={branch.documentId}>
+                    {branch.name}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Grid>
+          <Grid item xs={12} sm={12} md={4}>
+            <Box sx={{ display: 'flex', alignItems: 'center', height: '100%' }}>
+              <Chip 
+                label={`${filteredWorkers.length} çalışan gösteriliyor`}
+                color='primary'
+                variant='outlined'
+              />
+            </Box>
+          </Grid>
+        </Grid>
+
         <TableContainer component={Paper}>
           <Table>
             <TableHead>
@@ -295,20 +383,23 @@ const WorkersListPage = () => {
                 <TableCell>Telefon</TableCell>
                 <TableCell>Meslek</TableCell>
                 <TableCell>Şube</TableCell>
+                <TableCell>Maaş</TableCell>
                 <TableCell>İşe Giriş</TableCell>
                 <TableCell>Durum</TableCell>
                 <TableCell>İşlemler</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
-              {workers.length === 0 ? (
+              {filteredWorkers.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={9} align='center'>
-                    <Typography color='text.secondary'>Henüz çalışan eklenmemiş</Typography>
+                  <TableCell colSpan={10} align='center'>
+                    <Typography color='text.secondary'>
+                      {workers.length === 0 ? 'Henüz çalışan eklenmemiş' : 'Filtreye uygun çalışan bulunamadı'}
+                    </Typography>
                   </TableCell>
                 </TableRow>
               ) : (
-                workers.map(worker => (
+                filteredWorkers.map(worker => (
                   <TableRow key={worker.documentId}>
                     <TableCell>
                       <Avatar
@@ -327,6 +418,15 @@ const WorkersListPage = () => {
                     <TableCell>{worker.phone || '-'}</TableCell>
                     <TableCell>{worker.profession || '-'}</TableCell>
                     <TableCell>{worker.branch?.name || '-'}</TableCell>
+                    <TableCell>
+                      {worker.salary ? (
+                        <Typography variant='body2' fontWeight={600} color='success.main'>
+                          {new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(worker.salary)}
+                        </Typography>
+                      ) : (
+                        <Typography variant='body2' color='text.secondary'>-</Typography>
+                      )}
+                    </TableCell>
                     <TableCell>
                       {worker.hireDate ? new Date(worker.hireDate).toLocaleDateString('tr-TR') : '-'}
                     </TableCell>

@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Card, CardHeader, CardContent, Button, IconButton, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Alert, CircularProgress, Box, MenuItem, Select, FormControl, InputLabel, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Grid, Typography } from '@mui/material'
+import { Card, CardHeader, CardContent, Button, IconButton, Alert, CircularProgress, Box, MenuItem, Select, FormControl, InputLabel, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Grid, Typography, CardMedia, Chip } from '@mui/material'
 import { vehicleService, type Vehicle } from '@/services/vehicle.service'
 import { institutionService, type Institution } from '@/services/institution.service'
 import { axiosClient } from '@/libs/axios'
@@ -14,6 +14,7 @@ const VehiclesPage = () => {
   const [error, setError] = useState<string | null>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [editingId, setEditingId] = useState<string | null>(null)
   const [formData, setFormData] = useState({ institution: '', plateNumber: '', model: '', inspectionDate: '', insurancePolicyDate: '', usedBy: '' })
   const [photo, setPhoto] = useState<File | null>(null)
 
@@ -54,14 +55,36 @@ const VehiclesPage = () => {
       setSaving(true)
       const data: any = { ...formData }
       if (photo) data.photo = await uploadFile(photo)
-      await vehicleService.create(data)
+      
+      if (editingId) {
+        await vehicleService.update(editingId, data)
+      } else {
+        await vehicleService.create(data)
+      }
+      
       await loadVehicles()
       setDialogOpen(false)
+      setEditingId(null)
+      setFormData({ institution: '', plateNumber: '', model: '', inspectionDate: '', insurancePolicyDate: '', usedBy: '' })
+      setPhoto(null)
     } catch (err: any) {
       alert(err.response?.data?.error?.message || 'Araç oluşturulurken bir hata oluştu')
     } finally {
       setSaving(false)
     }
+  }
+  
+  const handleEdit = (vehicle: Vehicle) => {
+    setEditingId(vehicle.documentId)
+    setFormData({
+      institution: vehicle.institution?.id || '',
+      plateNumber: vehicle.plateNumber,
+      model: vehicle.model,
+      inspectionDate: vehicle.inspectionDate || '',
+      insurancePolicyDate: vehicle.insurancePolicyDate || '',
+      usedBy: vehicle.usedBy || ''
+    })
+    setDialogOpen(true)
   }
 
   const handleDelete = async (id: string) => {
@@ -93,45 +116,78 @@ const VehiclesPage = () => {
         } />
         <CardContent>
           {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
-          <TableContainer component={Paper}>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell>Kurum</TableCell>
-                  <TableCell>Plaka</TableCell>
-                  <TableCell>Model</TableCell>
-                  <TableCell>Muayene Tarihi</TableCell>
-                  <TableCell>Sigorta Tarihi</TableCell>
-                  <TableCell>Kullanıcı</TableCell>
-                  <TableCell align="right">İşlemler</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {vehicles.length === 0 ? (
-                  <TableRow><TableCell colSpan={7} align="center">Henüz araç eklenmemiş</TableCell></TableRow>
-                ) : (
-                  vehicles.map((vehicle) => (
-                    <TableRow key={vehicle.id}>
-                      <TableCell>{vehicle.institution?.name || '-'}</TableCell>
-                      <TableCell>{vehicle.plateNumber}</TableCell>
-                      <TableCell>{vehicle.model}</TableCell>
-                      <TableCell>{vehicle.inspectionDate ? new Date(vehicle.inspectionDate).toLocaleDateString('tr-TR') : '-'}</TableCell>
-                      <TableCell>{vehicle.insurancePolicyDate ? new Date(vehicle.insurancePolicyDate).toLocaleDateString('tr-TR') : '-'}</TableCell>
-                      <TableCell>{vehicle.usedBy || '-'}</TableCell>
-                      <TableCell align="right">
-                        <IconButton size="small" color="error" onClick={() => handleDelete(vehicle.documentId)}><i className="tabler-trash" /></IconButton>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </TableContainer>
+          <Grid container spacing={3}>
+            {vehicles.length === 0 ? (
+              <Grid item xs={12}>
+                <Box display="flex" justifyContent="center" alignItems="center" minHeight="200px">
+                  <Typography color="text.secondary">Henüz araç eklenmemiş</Typography>
+                </Box>
+              </Grid>
+            ) : (
+              vehicles.map((vehicle) => (
+                <Grid item xs={12} sm={6} md={4} key={vehicle.id}>
+                  <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+                    {vehicle.photo?.url && (
+                      <CardMedia
+                        component="img"
+                        height="200"
+                        image={`${process.env.NEXT_PUBLIC_IMAGE_BASE_URL}${vehicle.photo.url}`}
+                        alt={vehicle.plateNumber}
+                        sx={{ objectFit: 'cover' }}
+                      />
+                    )}
+                    <CardContent sx={{ flexGrow: 1 }}>
+                      <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+                        <Typography variant="h6" component="div">
+                          {vehicle.plateNumber}
+                        </Typography>
+                        <Chip label={vehicle.model} color="primary" size="small" />
+                      </Box>
+                      <Box mb={1}>
+                        <Typography variant="body2" color="text.secondary">
+                          <strong>Kurum:</strong> {vehicle.institution?.name || '-'}
+                        </Typography>
+                      </Box>
+                      {vehicle.usedBy && (
+                        <Box mb={1}>
+                          <Typography variant="body2" color="text.secondary">
+                            <strong>Kullanan:</strong> {vehicle.usedBy}
+                          </Typography>
+                        </Box>
+                      )}
+                      {vehicle.inspectionDate && (
+                        <Box mb={1}>
+                          <Typography variant="body2" color="text.secondary">
+                            <strong>Muayene:</strong> {new Date(vehicle.inspectionDate).toLocaleDateString('tr-TR')}
+                          </Typography>
+                        </Box>
+                      )}
+                      {vehicle.insurancePolicyDate && (
+                        <Box mb={1}>
+                          <Typography variant="body2" color="text.secondary">
+                            <strong>Sigorta:</strong> {new Date(vehicle.insurancePolicyDate).toLocaleDateString('tr-TR')}
+                          </Typography>
+                        </Box>
+                      )}
+                      <Box mt={2} display="flex" justifyContent="flex-end" gap={1}>
+                        <IconButton size="small" color="primary" onClick={() => handleEdit(vehicle)}>
+                          <i className="tabler-edit" />
+                        </IconButton>
+                        <IconButton size="small" color="error" onClick={() => handleDelete(vehicle.documentId)}>
+                          <i className="tabler-trash" />
+                        </IconButton>
+                      </Box>
+                    </CardContent>
+                  </Card>
+                </Grid>
+              ))
+            )}
+          </Grid>
         </CardContent>
       </Card>
 
-      <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="md" fullWidth>
-        <DialogTitle>Yeni Araç Ekle</DialogTitle>
+      <Dialog open={dialogOpen} onClose={() => { setDialogOpen(false); setEditingId(null); }} maxWidth="md" fullWidth>
+        <DialogTitle>{editingId ? 'Araç Düzenle' : 'Yeni Araç Ekle'}</DialogTitle>
         <DialogContent>
           <Grid container spacing={3} sx={{ mt: 1 }}>
             <Grid item xs={12}>
@@ -168,7 +224,7 @@ const VehiclesPage = () => {
           </Grid>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setDialogOpen(false)} disabled={saving}>İptal</Button>
+          <Button onClick={() => { setDialogOpen(false); setEditingId(null); }} disabled={saving}>İptal</Button>
           <Button onClick={handleSubmit} variant="contained" disabled={saving}>{saving ? 'Kaydediliyor...' : 'Kaydet'}</Button>
         </DialogActions>
       </Dialog>

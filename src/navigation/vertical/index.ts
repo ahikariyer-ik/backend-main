@@ -11,6 +11,14 @@ interface MenuItem {
 }
 
 const getNavigation = (): MenuItem[] => [
+  // Şirket Ana Sayfa (Statistics) - Tüm şirketler için
+  {
+    title: 'Ana Sayfa',
+    icon: 'tabler-home',
+    path: '/statistics',
+    visible: () => !authService.isWorker() && (authService.isCompany() || authService.isAhiIk())
+  },
+  
   // Çalışan (Worker) Menüsü
   {
     title: 'Ana Sayfa',
@@ -30,6 +38,12 @@ const getNavigation = (): MenuItem[] => [
     path: '/worker-tasks',
     visible: () => authService.isWorker()
   },
+  {
+    title: 'PDKS QR Okut',
+    icon: 'tabler-qrcode',
+    path: '/pdks-scan',
+    visible: () => authService.isWorker()
+  },
   
   // Admin/Employee Menüsü (Worker bu menüleri GÖREMEMELİ!)
   {
@@ -41,22 +55,26 @@ const getNavigation = (): MenuItem[] => [
       {
         title: 'Hakkımızda',
         icon: 'tabler-file',
-        path: '/pages/about'
+        path: '/pages/about',
+        visible: () => authService.isEmployee()
       },
       {
         title: 'İletişim',
         icon: 'tabler-file',
-        path: '/pages/contact'
+        path: '/pages/contact',
+        visible: () => authService.isEmployee()
       },
       {
         title: 'Blog',
         icon: 'tabler-file',
-        path: '/pages/blog'
+        path: '/pages/blog',
+        visible: () => authService.isEmployee()
       },
       {
         title: 'Blog Post',
         icon: 'tabler-file',
-        path: '/pages/blog-post/list'
+        path: '/pages/blog-post/list',
+        visible: () => authService.isEmployee()
       }
     ]
   },
@@ -116,15 +134,9 @@ const getNavigation = (): MenuItem[] => [
   {
     title: 'İnsan Kaynakları',
     icon: 'tabler-users',
-    path: '/statistics',
+    path: '/digital-hr',
     visible: () => !authService.isWorker() && (authService.isAhiIk() || authService.isEmployee()),
     children: [
-      {
-        title: 'Ana Sayfa',
-        icon: 'tabler-home',
-        path: '/statistics',
-        visible: () => authService.isAhiIk()
-      },
       {
         title: 'Dijital İK',
         icon: 'tabler-file-check',
@@ -224,6 +236,18 @@ const getNavigation = (): MenuItem[] => [
         visible: () => authService.isAhiIk()
       }
     ]
+  },
+  {
+    title: 'Satın Alma',
+    icon: 'tabler-shopping-cart',
+    path: '/institution-management/purchasings',
+    visible: () => !authService.isWorker() && authService.isAhiIk()
+  },
+  {
+    title: 'Anımsatıcılar',
+    icon: 'tabler-bell',
+    path: '/institution-management/reminders',
+    visible: () => !authService.isWorker() && authService.isAhiIk()
   },
   {
     title: 'Kullanıcı Yönetim',

@@ -324,8 +324,8 @@ export class AuthService {
   public getDashboardUrl(): string {
     if (this.isEmployee()) {
       return '/employee-dashboard'
-    } else if (this.isCompany()) {
-      return '/company-dashboard'
+    } else if (this.isCompany() || this.isAhiIk()) {
+      return '/statistics'
     } else if (this.isWorker()) {
       return '/worker-dashboard'
     }

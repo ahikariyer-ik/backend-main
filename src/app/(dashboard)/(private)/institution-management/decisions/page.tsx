@@ -13,6 +13,7 @@ const DecisionsPage = () => {
   const [error, setError] = useState<string | null>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [editingId, setEditingId] = useState<string | null>(null)
   const [formData, setFormData] = useState({ institution: '', title: '', decisionDate: '', description: '' })
   const [document, setDocument] = useState<File | null>(null)
   const [viewDocumentDialog, setViewDocumentDialog] = useState(false)
@@ -52,14 +53,34 @@ const DecisionsPage = () => {
       setSaving(true)
       const data: any = { ...formData }
       if (document) data.document = await uploadFile(document)
-      await decisionService.create(data)
+      
+      if (editingId) {
+        await decisionService.update(editingId, data)
+      } else {
+        await decisionService.create(data)
+      }
+      
       await loadDecisions()
       setDialogOpen(false)
+      setEditingId(null)
+      setFormData({ institution: '', title: '', decisionDate: '', description: '' })
+      setDocument(null)
     } catch (err: any) {
       alert(err.response?.data?.error?.message || 'Karar oluşturulurken bir hata oluştu')
     } finally {
       setSaving(false)
     }
+  }
+  
+  const handleEdit = (decision: Decision) => {
+    setEditingId(decision.documentId)
+    setFormData({
+      institution: decision.institution?.id || '',
+      title: decision.title,
+      decisionDate: decision.decisionDate || '',
+      description: decision.description || ''
+    })
+    setDialogOpen(true)
   }
 
   const handleViewDocument = (doc: any, label: string, decisionId: string) => {
@@ -154,6 +175,7 @@ const DecisionsPage = () => {
                         ) : '-'}
                       </TableCell>
                       <TableCell align="right">
+                        <IconButton size="small" color="primary" onClick={() => handleEdit(dec)}><i className="tabler-edit" /></IconButton>
                         <IconButton size="small" color="error" onClick={() => handleDelete(dec.documentId)}><i className="tabler-trash" /></IconButton>
                       </TableCell>
                     </TableRow>
@@ -165,8 +187,8 @@ const DecisionsPage = () => {
         </CardContent>
       </Card>
 
-      <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="md" fullWidth>
-        <DialogTitle>Yeni Karar Ekle</DialogTitle>
+      <Dialog open={dialogOpen} onClose={() => { setDialogOpen(false); setEditingId(null); }} maxWidth="md" fullWidth>
+        <DialogTitle>{editingId ? 'Karar Düzenle' : 'Yeni Karar Ekle'}</DialogTitle>
         <DialogContent>
           <Grid container spacing={3} sx={{ mt: 1 }}>
             <Grid item xs={12}><FormControl fullWidth required><InputLabel>Kurum</InputLabel><Select value={formData.institution} label="Kurum" onChange={(e) => setFormData({ ...formData, institution: e.target.value })}>{institutions.map((inst) => <MenuItem key={inst.id} value={inst.id}>{inst.name}</MenuItem>)}</Select></FormControl></Grid>
@@ -177,7 +199,7 @@ const DecisionsPage = () => {
           </Grid>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setDialogOpen(false)} disabled={saving}>İptal</Button>
+          <Button onClick={() => { setDialogOpen(false); setEditingId(null); }} disabled={saving}>İptal</Button>
           <Button onClick={handleSubmit} variant="contained" disabled={saving}>{saving ? 'Kaydediliyor...' : 'Kaydet'}</Button>
         </DialogActions>
       </Dialog>

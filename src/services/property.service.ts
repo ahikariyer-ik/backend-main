@@ -17,6 +17,7 @@ export interface Property {
   address?: string
   uavtAddress?: string
   daskPolicyNumber?: string
+  daskPolicyDate?: string
   acquisitionMethod?: string
   daskPolicy?: {
     id: number

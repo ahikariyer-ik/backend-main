@@ -36,7 +36,7 @@ export function middleware(request: NextRequest) {
     const dest = userData?.role?.type === 'employee'
       ? '/employee-dashboard'
       : userData?.role?.type === 'authenticated'
-        ? '/company-dashboard'
+        ? '/statistics'
         : userData?.role?.type === 'worker'
           ? '/worker-dashboard'
           : '/login'
@@ -88,6 +88,7 @@ export function middleware(request: NextRequest) {
     '/jobs',
     '/company-dashboard',
     '/employee-dashboard',
+    '/statistics',
     '/profile/company'
   ]
   
@@ -102,7 +103,7 @@ export function middleware(request: NextRequest) {
     }
     
     // AHİ-İK kontrolü (sadece şirketler için)
-    const ahiIkPaths = ['/digital-hr', '/workers', '/pdks', '/leave-tracking', '/tasks', '/branches', '/departments', '/statistics']
+    const ahiIkPaths = ['/digital-hr', '/workers', '/pdks', '/leave-tracking', '/tasks', '/branches', '/departments']
     const isAhiIkPath = ahiIkPaths.some(path => pathname.startsWith(path))
     
     if (isAhiIkPath) {

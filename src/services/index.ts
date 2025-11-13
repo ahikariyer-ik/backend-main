@@ -5,5 +5,7 @@ export * from './institution.service';
 export * from './property.service';
 export * from './vehicle.service';
 export * from './decision.service';
+export * from './reminder.service';
+export * from './purchasing.service';
 export * from './outgoing-document.service';
 export * from './incoming-document.service';

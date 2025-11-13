@@ -13,6 +13,7 @@ const IncomingDocumentsPage = () => {
   const [error, setError] = useState<string | null>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [editingId, setEditingId] = useState<string | null>(null)
   const [formData, setFormData] = useState({ institution: '', title: '', receivedFrom: '', receivedDate: '', description: '' })
   const [document, setDocument] = useState<File | null>(null)
   const [viewDocumentDialog, setViewDocumentDialog] = useState(false)
@@ -52,14 +53,35 @@ const IncomingDocumentsPage = () => {
       setSaving(true)
       const data: any = { ...formData }
       if (document) data.document = await uploadFile(document)
-      await incomingDocumentService.create(data)
+      
+      if (editingId) {
+        await incomingDocumentService.update(editingId, data)
+      } else {
+        await incomingDocumentService.create(data)
+      }
+      
       await loadDocuments()
       setDialogOpen(false)
+      setEditingId(null)
+      setFormData({ institution: '', title: '', receivedFrom: '', receivedDate: '', description: '' })
+      setDocument(null)
     } catch (err: any) {
       alert(err.response?.data?.error?.message || 'Gelen evrak oluşturulurken bir hata oluştu')
     } finally {
       setSaving(false)
     }
+  }
+  
+  const handleEdit = (doc: IncomingDocument) => {
+    setEditingId(doc.documentId)
+    setFormData({
+      institution: doc.institution?.id || '',
+      title: doc.title,
+      receivedFrom: doc.receivedFrom || '',
+      receivedDate: doc.receivedDate || '',
+      description: doc.description || ''
+    })
+    setDialogOpen(true)
   }
 
   const handleViewDocument = (doc: any, label: string, docId: string) => {
@@ -156,6 +178,7 @@ const IncomingDocumentsPage = () => {
                         ) : '-'}
                       </TableCell>
                       <TableCell align="right">
+                        <IconButton size="small" color="primary" onClick={() => handleEdit(doc)}><i className="tabler-edit" /></IconButton>
                         <IconButton size="small" color="error" onClick={() => handleDelete(doc.documentId)}><i className="tabler-trash" /></IconButton>
                       </TableCell>
                     </TableRow>
@@ -167,8 +190,8 @@ const IncomingDocumentsPage = () => {
         </CardContent>
       </Card>
 
-      <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="md" fullWidth>
-        <DialogTitle>Yeni Gelen Evrak Ekle</DialogTitle>
+      <Dialog open={dialogOpen} onClose={() => { setDialogOpen(false); setEditingId(null); }} maxWidth="md" fullWidth>
+        <DialogTitle>{editingId ? 'Gelen Evrak Düzenle' : 'Yeni Gelen Evrak Ekle'}</DialogTitle>
         <DialogContent>
           <Grid container spacing={3} sx={{ mt: 1 }}>
             <Grid item xs={12}><FormControl fullWidth required><InputLabel>Kurum</InputLabel><Select value={formData.institution} label="Kurum" onChange={(e) => setFormData({ ...formData, institution: e.target.value })}>{institutions.map((inst) => <MenuItem key={inst.id} value={inst.id}>{inst.name}</MenuItem>)}</Select></FormControl></Grid>
@@ -180,7 +203,7 @@ const IncomingDocumentsPage = () => {
           </Grid>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setDialogOpen(false)} disabled={saving}>İptal</Button>
+          <Button onClick={() => { setDialogOpen(false); setEditingId(null); }} disabled={saving}>İptal</Button>
           <Button onClick={handleSubmit} variant="contained" disabled={saving}>{saving ? 'Kaydediliyor...' : 'Kaydet'}</Button>
         </DialogActions>
       </Dialog>

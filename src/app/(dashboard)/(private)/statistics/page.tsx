@@ -20,7 +20,7 @@ import { formatNumber } from '@core/utils/format'
 
 // Axios Import
 import { axiosClient } from '@/libs/axios'
-import { authService } from '@/services'
+import { authService, propertyService, vehicleService, reminderService, purchasingService, decisionService } from '@/services'
 
 const StatisticsPage = () => {
   // States
@@ -41,6 +41,15 @@ const StatisticsPage = () => {
   const [branchStats, setBranchStats] = useState<any[]>([])
   const [positionStats, setPositionStats] = useState<any[]>([])
   const [recentHires, setRecentHires] = useState<any[]>([])
+  const [institutionStats, setInstitutionStats] = useState({
+    properties: 0,
+    vehicles: 0,
+    reminders: 0,
+    pendingReminders: 0,
+    purchasings: 0,
+    totalPurchaseAmount: 0,
+    decisions: 0
+  })
   const [loading, setLoading] = useState(true)
 
   // Fetch data
@@ -156,6 +165,49 @@ const StatisticsPage = () => {
         setBranchStats(branchStatsArray)
         setPositionStats(positionStatsArray)
         setRecentHires(recentHiresArray)
+
+        // Fetch institution management statistics
+        try {
+          console.log('🏢 Fetching institution management statistics...')
+          
+          // Get properties
+          const propertiesData = await propertyService.getAll()
+          console.log('🏠 Properties:', propertiesData.length)
+          
+          // Get vehicles
+          const vehiclesData = await vehicleService.getAll()
+          console.log('🚗 Vehicles:', vehiclesData.length)
+          
+          // Get reminders
+          const remindersData = await reminderService.getAll()
+          const pendingRemindersCount = remindersData.filter((r: any) => r.status === 'pending').length
+          console.log('🔔 Reminders:', remindersData.length, 'Pending:', pendingRemindersCount)
+          
+          // Get purchasings
+          const purchasingsData = await purchasingService.getAll()
+          const totalPurchaseAmount = purchasingsData.reduce((sum: number, p: any) => {
+            return sum + (parseFloat(p.totalPrice as any) || 0)
+          }, 0)
+          console.log('🛒 Purchasings:', purchasingsData.length, 'Total:', totalPurchaseAmount)
+          
+          // Get decisions
+          const decisionsData = await decisionService.getAll()
+          console.log('📄 Decisions:', decisionsData.length)
+
+          setInstitutionStats({
+            properties: propertiesData.length,
+            vehicles: vehiclesData.length,
+            reminders: remindersData.length,
+            pendingReminders: pendingRemindersCount,
+            purchasings: purchasingsData.length,
+            totalPurchaseAmount: totalPurchaseAmount,
+            decisions: decisionsData.length
+          })
+          
+          console.log('✅ Institution stats loaded successfully')
+        } catch (error) {
+          console.error('❌ Kurum yönetimi verileri yüklenirken hata:', error)
+        }
       } catch (error) {
         console.error('Veri yüklenirken hata oluştu:', error)
       } finally {
@@ -367,6 +419,133 @@ const StatisticsPage = () => {
         </Card>
       </Grid>
 
+      {/* Kurum Yönetimi İstatistikleri */}
+      <Grid item xs={12}>
+        <Typography variant='h5' sx={{ mb: 2, mt: 2 }}>
+          Kurum Yönetimi
+        </Typography>
+      </Grid>
+
+      {/* Konutlar */}
+      <Grid item xs={12} sm={6} md={3}>
+        <Card>
+          <CardContent>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Box>
+                <Typography variant='h6' color='text.primary'>
+                  Konutlar
+                </Typography>
+                <Typography variant='h4' sx={{ mb: 1 }}>
+                  {formatNumber(institutionStats.properties)}
+                </Typography>
+                <Typography variant='body2' color='text.secondary'>
+                  Toplam konut
+                </Typography>
+              </Box>
+              <Box sx={{ backgroundColor: 'info.main', borderRadius: '50%', width: 48, height: 48, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <i className='tabler-home' style={{ fontSize: 24, color: 'white' }} />
+              </Box>
+            </Box>
+          </CardContent>
+        </Card>
+      </Grid>
+
+      {/* Araçlar */}
+      <Grid item xs={12} sm={6} md={3}>
+        <Card>
+          <CardContent>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Box>
+                <Typography variant='h6' color='text.primary'>
+                  Araçlar
+                </Typography>
+                <Typography variant='h4' sx={{ mb: 1 }}>
+                  {formatNumber(institutionStats.vehicles)}
+                </Typography>
+                <Typography variant='body2' color='text.secondary'>
+                  Toplam araç
+                </Typography>
+              </Box>
+              <Box sx={{ backgroundColor: 'primary.main', borderRadius: '50%', width: 48, height: 48, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <i className='tabler-car' style={{ fontSize: 24, color: 'white' }} />
+              </Box>
+            </Box>
+          </CardContent>
+        </Card>
+      </Grid>
+
+      {/* Anımsatıcılar */}
+      <Grid item xs={12} sm={6} md={3}>
+        <Card>
+          <CardContent>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Box>
+                <Typography variant='h6' color='text.primary'>
+                  Anımsatıcılar
+                </Typography>
+                <Typography variant='h4' sx={{ mb: 1 }}>
+                  {formatNumber(institutionStats.reminders)}
+                </Typography>
+                <Typography variant='body2' color='text.secondary'>
+                  {institutionStats.pendingReminders} beklemede
+                </Typography>
+              </Box>
+              <Box sx={{ backgroundColor: 'warning.main', borderRadius: '50%', width: 48, height: 48, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <i className='tabler-bell' style={{ fontSize: 24, color: 'white' }} />
+              </Box>
+            </Box>
+          </CardContent>
+        </Card>
+      </Grid>
+
+      {/* Satın Alma */}
+      <Grid item xs={12} sm={6} md={3}>
+        <Card>
+          <CardContent>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Box>
+                <Typography variant='h6' color='text.primary'>
+                  Satın Alma
+                </Typography>
+                <Typography variant='h4' sx={{ mb: 1 }}>
+                  {formatNumber(institutionStats.purchasings)}
+                </Typography>
+                <Typography variant='body2' color='text.secondary'>
+                  {formatNumber(institutionStats.totalPurchaseAmount)} ₺
+                </Typography>
+              </Box>
+              <Box sx={{ backgroundColor: 'success.main', borderRadius: '50%', width: 48, height: 48, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <i className='tabler-shopping-cart' style={{ fontSize: 24, color: 'white' }} />
+              </Box>
+            </Box>
+          </CardContent>
+        </Card>
+      </Grid>
+
+      {/* Kararlar */}
+      <Grid item xs={12} sm={6} md={3}>
+        <Card>
+          <CardContent>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Box>
+                <Typography variant='h6' color='text.primary'>
+                  Kararlar
+                </Typography>
+                <Typography variant='h4' sx={{ mb: 1 }}>
+                  {formatNumber(institutionStats.decisions)}
+                </Typography>
+                <Typography variant='body2' color='text.secondary'>
+                  Toplam karar
+                </Typography>
+              </Box>
+              <Box sx={{ backgroundColor: 'error.main', borderRadius: '50%', width: 48, height: 48, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <i className='tabler-file-text' style={{ fontSize: 24, color: 'white' }} />
+              </Box>
+            </Box>
+          </CardContent>
+        </Card>
+      </Grid>
+
       {/* Departman ve Şube İstatistikleri */}
       <Grid item xs={12} md={6}>
         <Card>
@@ -504,4 +683,3 @@ const StatisticsPage = () => {
 }
 
 export default StatisticsPage
-

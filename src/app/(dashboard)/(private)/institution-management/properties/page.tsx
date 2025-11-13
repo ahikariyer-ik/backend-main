@@ -45,6 +45,7 @@ const PropertiesPage = () => {
     address: '',
     uavtAddress: '',
     daskPolicyNumber: '',
+    daskPolicyDate: '',
     acquisitionMethod: ''
   })
   const [editMode, setEditMode] = useState(false)
@@ -99,6 +100,7 @@ const PropertiesPage = () => {
       address: '',
       uavtAddress: '',
       daskPolicyNumber: '',
+      daskPolicyDate: '',
       acquisitionMethod: ''
     })
     setFiles({
@@ -118,6 +120,7 @@ const PropertiesPage = () => {
       address: property.address || '',
       uavtAddress: property.uavtAddress || '',
       daskPolicyNumber: property.daskPolicyNumber || '',
+      daskPolicyDate: property.daskPolicyDate || '',
       acquisitionMethod: property.acquisitionMethod || ''
     })
     setFiles({
@@ -347,13 +350,24 @@ const PropertiesPage = () => {
               />
             </Grid>
 
-            <Grid item xs={12}>
+            <Grid item xs={12} sm={6}>
               <TextField
                 fullWidth
                 label="DASK Poliçe Numarası"
                 value={formData.daskPolicyNumber}
                 onChange={(e) => setFormData({ ...formData, daskPolicyNumber: e.target.value })}
                 placeholder="DASK poliçe numarasını giriniz"
+              />
+            </Grid>
+
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                label="DASK Poliçe Tarihi"
+                type="date"
+                value={formData.daskPolicyDate}
+                onChange={(e) => setFormData({ ...formData, daskPolicyDate: e.target.value })}
+                InputLabelProps={{ shrink: true }}
               />
             </Grid>
 

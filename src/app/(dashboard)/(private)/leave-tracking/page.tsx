@@ -3,10 +3,19 @@
 import { useEffect, useState } from 'react'
 
 // MUI Imports
-import { Card, CardHeader, CardContent, Grid, Box, Typography, Chip, Button, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Alert, LinearProgress, CircularProgress } from '@mui/material'
+import { Card, CardHeader, CardContent, Grid, Box, Typography, Chip, Button, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Alert, LinearProgress, CircularProgress, MenuItem, Select, FormControl, InputLabel } from '@mui/material'
 
 // Services
 import { leaveRequestService, LeaveRequest } from '@/services/leave-request.service'
+import { axiosClient } from '@/libs/axios'
+import { authService } from '@/services'
+
+interface Worker {
+  id: number
+  documentId: string
+  firstName: string
+  lastName: string
+}
 
 const LeaveTrackingPage = () => {
   const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([])
@@ -18,10 +27,33 @@ const LeaveTrackingPage = () => {
   const [reviewNote, setReviewNote] = useState('')
   const [reviewAction, setReviewAction] = useState<'approve' | 'reject'>('approve')
   const [deleting, setDeleting] = useState(false)
+  const [workers, setWorkers] = useState<Worker[]>([])
+  const [selectedWorker, setSelectedWorker] = useState<string>('all')
 
   useEffect(() => {
     loadLeaveRequests()
+    loadWorkers()
   }, [])
+
+  const loadWorkers = async () => {
+    try {
+      const companyProfile = authService.getCompanyProfile()
+      if (!companyProfile) return
+
+      const response = await axiosClient.get('/api/workers', {
+        params: {
+          'filters[company][id]': companyProfile.id,
+          'filters[isActive]': true,
+          'pagination[pageSize]': 1000,
+          'sort[0]': 'firstName:asc'
+        }
+      })
+      
+      setWorkers(response.data.data || [])
+    } catch (error: any) {
+      console.error('Çalışanlar yüklenirken hata:', error)
+    }
+  }
 
   const loadLeaveRequests = async () => {
     try {
@@ -37,6 +69,12 @@ const LeaveTrackingPage = () => {
       setLoading(false)
     }
   }
+
+  // Filtrelenmiş izin talepleri
+  const filteredLeaveRequests = leaveRequests.filter(request => {
+    if (selectedWorker === 'all') return true
+    return request.worker.documentId === selectedWorker
+  })
 
   const handleReviewClick = (request: LeaveRequest, action: 'approve' | 'reject') => {
     setSelectedRequest(request)
@@ -121,13 +159,13 @@ const LeaveTrackingPage = () => {
     }
   }
 
-  // İstatistikler
+  // İstatistikler (filtrelenmiş verilerle)
   const stats = {
-    total: leaveRequests.length,
-    pending: leaveRequests.filter(r => r.status === 'pending').length,
-    approved: leaveRequests.filter(r => r.status === 'approved').length,
-    rejected: leaveRequests.filter(r => r.status === 'rejected').length,
-    todayOnLeave: leaveRequests.filter(r => {
+    total: filteredLeaveRequests.length,
+    pending: filteredLeaveRequests.filter(r => r.status === 'pending').length,
+    approved: filteredLeaveRequests.filter(r => r.status === 'approved').length,
+    rejected: filteredLeaveRequests.filter(r => r.status === 'rejected').length,
+    todayOnLeave: filteredLeaveRequests.filter(r => {
       const today = new Date()
       const start = new Date(r.startDate)
       const end = new Date(r.endDate)
@@ -195,6 +233,28 @@ const LeaveTrackingPage = () => {
             </Alert>
           )}
 
+          {/* Filtreleme */}
+          <Box sx={{ mb: 3 }}>
+            <FormControl fullWidth>
+              <InputLabel id='worker-filter-label'>Çalışan Filtrele</InputLabel>
+              <Select
+                labelId='worker-filter-label'
+                value={selectedWorker}
+                label='Çalışan Filtrele'
+                onChange={(e) => setSelectedWorker(e.target.value)}
+              >
+                <MenuItem value='all'>
+                  <em>Tüm Çalışanlar</em>
+                </MenuItem>
+                {workers.map((worker) => (
+                  <MenuItem key={worker.documentId} value={worker.documentId}>
+                    {worker.firstName} {worker.lastName}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Box>
+
           <TableContainer component={Paper}>
             <Table>
               <TableHead>
@@ -210,7 +270,14 @@ const LeaveTrackingPage = () => {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {leaveRequests.map((request) => (
+                {filteredLeaveRequests.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={8} align='center'>
+                      <Typography color='text.secondary'>İzin talebi bulunamadı</Typography>
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  filteredLeaveRequests.map((request) => (
                   <TableRow key={request.documentId}>
                     <TableCell>
                       <Typography variant='body2'>
@@ -277,7 +344,8 @@ const LeaveTrackingPage = () => {
                       </Box>
                     </TableCell>
                   </TableRow>
-                ))}
+                  ))
+                )}
               </TableBody>
             </Table>
           </TableContainer>

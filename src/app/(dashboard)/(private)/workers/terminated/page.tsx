@@ -51,6 +51,10 @@ interface TerminatedWorker {
   department?: {
     name: string
   }
+  severancePay?: number
+  noticePay?: number
+  severancePaid?: boolean
+  noticePaid?: boolean
 }
 
 const TerminatedWorkersPage = () => {
@@ -177,13 +181,15 @@ const TerminatedWorkersPage = () => {
                 <TableCell>İşe Giriş Tarihi</TableCell>
                 <TableCell>İşten Ayrılış Tarihi</TableCell>
                 <TableCell>İşten Ayrılış Nedeni</TableCell>
+                <TableCell>Kıdem Tazminatı</TableCell>
+                <TableCell>İhbar Tazminatı</TableCell>
                 <TableCell>İşlemler</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {workers.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={10} align='center'>
+                  <TableCell colSpan={12} align='center'>
                     <Typography color='text.secondary'>Henüz işten ayrılan çalışan bulunmamaktadır</Typography>
                   </TableCell>
                 </TableRow>
@@ -235,6 +241,40 @@ const TerminatedWorkersPage = () => {
                       >
                         {worker.terminationReason || '-'}
                       </Typography>
+                    </TableCell>
+                    <TableCell>
+                      {worker.severancePay ? (
+                        <Box>
+                          <Typography variant='body2' fontWeight={600}>
+                            {new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(worker.severancePay)}
+                          </Typography>
+                          <Chip
+                            label={worker.severancePaid ? 'Ödendi' : 'Ödenmedi'}
+                            color={worker.severancePaid ? 'success' : 'warning'}
+                            size='small'
+                            sx={{ mt: 0.5 }}
+                          />
+                        </Box>
+                      ) : (
+                        <Typography variant='body2' color='text.secondary'>-</Typography>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {worker.noticePay ? (
+                        <Box>
+                          <Typography variant='body2' fontWeight={600}>
+                            {new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(worker.noticePay)}
+                          </Typography>
+                          <Chip
+                            label={worker.noticePaid ? 'Ödendi' : 'Ödenmedi'}
+                            color={worker.noticePaid ? 'success' : 'warning'}
+                            size='small'
+                            sx={{ mt: 0.5 }}
+                          />
+                        </Box>
+                      ) : (
+                        <Typography variant='body2' color='text.secondary'>-</Typography>
+                      )}
                     </TableCell>
                     <TableCell>
                       <IconButton
