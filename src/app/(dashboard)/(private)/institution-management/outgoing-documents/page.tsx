@@ -90,14 +90,14 @@ const OutgoingDocumentsPage = () => {
   }
 
   const handleDownloadDocument = () => {
-    if (selectedDocument?.file) {
-      const link = document.createElement('a')
+    if (selectedDocument?.file && typeof window !== 'undefined') {
+      const link = window.document.createElement('a')
       link.href = `${process.env.NEXT_PUBLIC_API_URL}${selectedDocument.file.url}`
       link.download = selectedDocument.file.name
       link.target = '_blank'
-      document.body.appendChild(link)
+      window.document.body.appendChild(link)
       link.click()
-      document.body.removeChild(link)
+      window.document.body.removeChild(link)
     }
   }
 
