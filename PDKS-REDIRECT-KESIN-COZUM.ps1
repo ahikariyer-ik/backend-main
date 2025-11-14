@@ -56,3 +56,4 @@ Write-Host "=== BİTTİ ===" -ForegroundColor Green
 
 
 
+
