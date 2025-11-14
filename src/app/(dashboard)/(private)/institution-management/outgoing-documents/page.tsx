@@ -75,7 +75,7 @@ const OutgoingDocumentsPage = () => {
   const handleEdit = (doc: OutgoingDocument) => {
     setEditingId(doc.documentId)
     setFormData({
-      institution: doc.institution?.id || '',
+      institution: doc.institution?.id?.toString() || '',
       title: doc.title,
       sentTo: doc.sentTo || '',
       sentDate: doc.sentDate || '',

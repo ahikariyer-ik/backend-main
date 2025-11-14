@@ -103,7 +103,7 @@ const PurchasingsPage = () => {
   const handleEdit = (purchasing: Purchasing) => {
     setEditingId(purchasing.documentId)
     setFormData({
-      institution: purchasing.institution?.id || '',
+      institution: purchasing.institution?.id?.toString() || '',
       itemName: purchasing.itemName,
       category: purchasing.category || '',
       supplier: purchasing.supplier || '',

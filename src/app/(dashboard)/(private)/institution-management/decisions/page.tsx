@@ -75,7 +75,7 @@ const DecisionsPage = () => {
   const handleEdit = (decision: Decision) => {
     setEditingId(decision.documentId)
     setFormData({
-      institution: decision.institution?.id || '',
+      institution: decision.institution?.id?.toString() || '',
       title: decision.title,
       decisionDate: decision.decisionDate || '',
       description: decision.description || ''

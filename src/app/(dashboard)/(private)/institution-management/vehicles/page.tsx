@@ -77,7 +77,7 @@ const VehiclesPage = () => {
   const handleEdit = (vehicle: Vehicle) => {
     setEditingId(vehicle.documentId)
     setFormData({
-      institution: vehicle.institution?.id || '',
+      institution: vehicle.institution?.id?.toString() || '',
       plateNumber: vehicle.plateNumber,
       model: vehicle.model,
       inspectionDate: vehicle.inspectionDate || '',
