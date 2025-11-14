@@ -42,11 +42,18 @@ const RemindersPage = () => {
   const [dialogOpen, setDialogOpen] = useState(false)
   const [saving, setSaving] = useState(false)
   const [syncing, setSyncing] = useState(false)
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<{
+    title: string
+    description: string
+    reminderDate: string
+    reminderType: 'custom' | 'dask_policy' | 'vehicle_insurance' | 'vehicle_inspection'
+    phoneNumber: string
+    message: string
+  }>({
     title: '',
     description: '',
     reminderDate: '',
-    reminderType: 'custom' as const,
+    reminderType: 'custom',
     phoneNumber: '',
     message: ''
   })
