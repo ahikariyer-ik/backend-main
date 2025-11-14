@@ -45,6 +45,10 @@ const documentInfo: Record<keyof WorkerDocuments, { label: string; description: 
   militaryDoc: {
     label: 'Askerlik Durum Belgesi',
     description: 'Askerlik durum belgenizi PDF formatında yükleyin'
+  },
+  employmentStartDoc: {
+    label: 'İşe Giriş Bildirgesi',
+    description: 'İşe giriş bildirge belgenizi PDF formatında yükleyin'
   }
 }
 
