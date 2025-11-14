@@ -49,13 +49,16 @@ export function middleware(request: NextRequest) {
     const workerAllowedPaths = [
       '/worker-dashboard',
       '/worker-tasks', 
-      '/worker-leave-requests'
+      '/worker-leave-requests',
+      '/worker-pdks-scan',
+      '/profile/password' // Şifre değiştirme sayfası
     ]
     
     const isWorkerPath = workerAllowedPaths.some(path => pathname.startsWith(path))
     
     // Worker izinli path'de değilse, dashboard'a yönlendir
     if (!isWorkerPath) {
+      console.log('Worker unauthorized path attempt:', pathname, '- Redirecting to dashboard')
       return NextResponse.redirect(new URL('/worker-dashboard', request.url))
     }
   }

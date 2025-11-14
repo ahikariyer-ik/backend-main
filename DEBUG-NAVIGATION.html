@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Navigation Debug</title>
+    <style>
+        body { font-family: monospace; padding: 20px; background: #f5f5f5; }
+        .section { background: white; padding: 15px; margin: 10px 0; border-radius: 5px; }
+        .error { color: red; font-weight: bold; }
+        .success { color: green; font-weight: bold; }
+        .warning { color: orange; font-weight: bold; }
+        code { background: #eee; padding: 2px 5px; border-radius: 3px; }
+    </style>
+</head>
+<body>
+    <h1>🔍 Worker Navigation Debug</h1>
+    
+    <div class="section">
+        <h2>Test Adımları:</h2>
+        <ol>
+            <li>Worker olarak giriş yapın: <code>http://localhost:3001</code></li>
+            <li>F12 tuşuna basın (Developer Console)</li>
+            <li><strong>Console</strong> sekmesine gidin</li>
+            <li>Aşağıdaki kodu yapıştırın ve Enter'a basın:</li>
+        </ol>
+        
+        <textarea style="width: 100%; height: 150px; font-family: monospace; padding: 10px;" readonly>
+// User bilgisini kontrol et
+const user = JSON.parse(localStorage.getItem('user') || '{}');
+console.log('User Role:', user?.role?.type);
+console.log('Is Worker?', user?.role?.type === 'worker');
+console.log('Is AhiIk?', user?.ahiIkMember === true);
+
+// Cookie'den de kontrol
+const cookieUser = document.cookie.split('; ').find(row => row.startsWith('user='));
+if (cookieUser) {
+    const userData = JSON.parse(decodeURIComponent(cookieUser.split('=')[1]));
+    console.log('Cookie User Role:', userData?.role?.type);
+}
+        </textarea>
+    </div>
+
+    <div class="section">
+        <h2>Beklenen Sonuç:</h2>
+        <p class="success">✅ User Role: "worker"</p>
+        <p class="success">✅ Is Worker? true</p>
+        <p class="error">❌ Is AhiIk? false</p>
+    </div>
+
+    <div class="section">
+        <h2>Navigation Menüsü Kontrol:</h2>
+        <p>Sol menüde <strong>sadece şunları</strong> görmelisiniz:</p>
+        <ul>
+            <li>✅ Ana Sayfa (worker-dashboard)</li>
+            <li>✅ İzin Taleplerim (worker-leave-requests)</li>
+            <li>✅ Görevlerim (worker-tasks)</li>
+            <li>✅ <strong>PDKS QR Okut</strong> (pdks-scan) ← BUNA TIKLAYIN</li>
+        </ul>
+        <p class="error">❌ <strong>"PDKS"</strong> veya <strong>"İnsan Kaynakları"</strong> menüsü GÖRÜNMEMELİ!</p>
+        <p class="warning">⚠️ Eğer "İnsan Kaynakları" altında "PDKS" görüyorsanız, ona tıklamayın!</p>
+    </div>
+
+    <div class="section">
+        <h2>Link Kontrolü:</h2>
+        <p>PDKS linkine sağ tıklayıp <strong>"Linki Kopyala"</strong> seçin.</p>
+        <p>Link şöyle olmalı:</p>
+        <p class="success">✅ <code>http://localhost:3001/pdks-scan</code></p>
+        <p class="error">❌ <code>http://localhost:3001/pdks</code> (YANLIŞ!)</p>
+    </div>
+
+    <div class="section">
+        <h2>Sorun Devam Ediyorsa:</h2>
+        <p>Console'da şu komutu çalıştırın:</p>
+        <textarea style="width: 100%; height: 100px; font-family: monospace; padding: 10px;" readonly>
+// Navigation visibility test
+const authService = window.authService || {}; 
+console.log('authService.isWorker:', typeof authService.isWorker === 'function' ? authService.isWorker() : 'FUNCTION YOK');
+console.log('authService.isAhiIk:', typeof authService.isAhiIk === 'function' ? authService.isAhiIk() : 'FUNCTION YOK');
+        </textarea>
+    </div>
+
+    <div class="section">
+        <h2>Network Log:</h2>
+        <ol>
+            <li>F12 → <strong>Network</strong> sekmesi</li>
+            <li>PDKS menüsüne tıklayın</li>
+            <li>İlk isteğe bakın:</li>
+        </ol>
+        <p class="success">✅ Doğru: <code>GET /pdks-scan → 200 OK</code></p>
+        <p class="error">❌ Yanlış: <code>GET /pdks → 307 Redirect → /worker-dashboard</code></p>
+    </div>
+</body>
+</html>
+
+
+
+

@@ -4,7 +4,7 @@
 import { useState, useEffect } from 'react'
 
 // MUI Imports
-import { Card, CardContent, Grid, Typography, Box, Chip, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, LinearProgress, Button } from '@mui/material'
+import { Card, CardContent, Grid, Typography, Box, Chip, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, LinearProgress, Button, CircularProgress, Alert } from '@mui/material'
 
 // Hook Imports
 import { formatNumber } from '@core/utils/format'
@@ -26,7 +26,8 @@ const documentTypeLabels: Record<string, string> = {
   populationRegistryDoc: 'Nüfus Kaydı',
   identityDoc: 'Kimlik',
   residenceDoc: 'İkametgah',
-  militaryDoc: 'Askerlik'
+  militaryDoc: 'Askerlik',
+  employmentStartDoc: 'İşe Giriş Belgesi'
 }
 
 const WorkerDashboardPage = () => {
@@ -49,7 +50,17 @@ const WorkerDashboardPage = () => {
         const workerResponse = await axiosClient.get('/api/workers', {
           params: {
             'filters[user][id]': user.id,
-            populate: ['user', 'company', 'department', 'branch', 'position', 'criminalRecordDoc', 'populationRegistryDoc', 'identityDoc', 'residenceDoc', 'militaryDoc']
+            'populate[0]': 'user',
+            'populate[1]': 'company',
+            'populate[2]': 'department',
+            'populate[3]': 'branch',
+            'populate[4]': 'position',
+            'populate[5]': 'criminalRecordDoc',
+            'populate[6]': 'populationRegistryDoc',
+            'populate[7]': 'identityDoc',
+            'populate[8]': 'residenceDoc',
+            'populate[9]': 'militaryDoc',
+            'populate[10]': 'employmentStartDoc'
           }
         })
 
@@ -63,7 +74,8 @@ const WorkerDashboardPage = () => {
             populationRegistryDoc: worker.populationRegistryDoc || null,
             identityDoc: worker.identityDoc || null,
             residenceDoc: worker.residenceDoc || null,
-            militaryDoc: worker.militaryDoc || null
+            militaryDoc: worker.militaryDoc || null,
+            employmentStartDoc: worker.employmentStartDoc || null
           })
 
           // Görevlerimi çek
@@ -98,7 +110,9 @@ const WorkerDashboardPage = () => {
     return (
       <Card>
         <CardContent>
-          <Typography>Yükleniyor...</Typography>
+          <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
+            <CircularProgress />
+          </Box>
         </CardContent>
       </Card>
     )
@@ -119,9 +133,9 @@ const WorkerDashboardPage = () => {
       case 'pending': return 'warning'
       case 'approved': return 'success'
       case 'rejected': return 'error'
-    default: return 'default'
+      default: return 'default'
+    }
   }
-}
 
   const handleViewDocument = (url: string, name: string) => {
     const fullUrl = `${process.env.NEXT_PUBLIC_API_URL}${url}`

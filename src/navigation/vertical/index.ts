@@ -27,6 +27,12 @@ const getNavigation = (): MenuItem[] => [
     visible: () => authService.isWorker()
   },
   {
+    title: 'QR Giriş/Çıkış',
+    icon: 'tabler-scan',
+    path: '/worker-pdks-scan',
+    visible: () => authService.isWorker()
+  },
+  {
     title: 'İzin Taleplerim',
     icon: 'tabler-calendar',
     path: '/worker-leave-requests',
@@ -36,12 +42,6 @@ const getNavigation = (): MenuItem[] => [
     title: 'Görevlerim',
     icon: 'tabler-clipboard-list',
     path: '/worker-tasks',
-    visible: () => authService.isWorker()
-  },
-  {
-    title: 'PDKS QR Okut',
-    icon: 'tabler-qrcode',
-    path: '/pdks-scan',
     visible: () => authService.isWorker()
   },
   
