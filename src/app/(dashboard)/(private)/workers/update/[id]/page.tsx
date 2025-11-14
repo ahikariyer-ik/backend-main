@@ -113,7 +113,10 @@ const UpdateWorkerPage = ({ params }: { params: Promise<{ id: string }> }) => {
           isRetired: worker.isRetired || false,
           isDisabled: worker.isDisabled || false,
           isForeigner: worker.isForeigner || false,
-          salary: worker.salary?.toString() || ''
+          salary: worker.salary?.toString() || '',
+          changePassword: false,
+          newPassword: '',
+          confirmPassword: ''
         })
 
         if (worker.photo) {
