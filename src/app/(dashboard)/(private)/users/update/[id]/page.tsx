@@ -103,9 +103,9 @@ const UpdateUserPage = ({ params }: { params: Promise<{ id: string }> }) => {
           companyName: userData.companyProfile.companyName,
           logo: userData.companyProfile.logo ?? undefined,
           sector: userData.companyProfile.sector?.id,
-          ahiIkEnabled: userData.companyProfile.ahiIkEnabled || false,
-          ahiIkStartDate: userData.companyProfile.ahiIkStartDate || '',
-          ahiIkEndDate: userData.companyProfile.ahiIkEndDate || ''
+          ahiIkEnabled: (userData.companyProfile as any).ahiIkEnabled || false,
+          ahiIkStartDate: (userData.companyProfile as any).ahiIkStartDate || '',
+          ahiIkEndDate: (userData.companyProfile as any).ahiIkEndDate || ''
         } : {
           companyName: '',
           logo: undefined,
