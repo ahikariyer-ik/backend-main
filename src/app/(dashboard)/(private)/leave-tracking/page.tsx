@@ -12,7 +12,6 @@ import { authService } from '@/services'
 
 interface Worker {
   id: number
-  documentId: string
   firstName: string
   lastName: string
 }
@@ -73,7 +72,7 @@ const LeaveTrackingPage = () => {
   // Filtrelenmiş izin talepleri
   const filteredLeaveRequests = leaveRequests.filter(request => {
     if (selectedWorker === 'all') return true
-    return request.worker.documentId === selectedWorker
+    return request.worker.id.toString() === selectedWorker
   })
 
   const handleReviewClick = (request: LeaveRequest, action: 'approve' | 'reject') => {
@@ -247,7 +246,7 @@ const LeaveTrackingPage = () => {
                   <em>Tüm Çalışanlar</em>
                 </MenuItem>
                 {workers.map((worker) => (
-                  <MenuItem key={worker.documentId} value={worker.documentId}>
+                  <MenuItem key={worker.id} value={worker.id.toString()}>
                     {worker.firstName} {worker.lastName}
                   </MenuItem>
                 ))}
