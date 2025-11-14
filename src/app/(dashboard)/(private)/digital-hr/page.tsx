@@ -308,7 +308,7 @@ const DigitalHRPage = () => {
 
         {workers.length === 0 ? (
           <Alert severity='info'>
-            Henüz kayıtlı çalışan bulunmamaktadır. Çalışan eklemek için "Çalışanlar" menüsünü kullanın.
+            Henüz kayıtlı çalışan bulunmamaktadır. Çalışan eklemek için &quot;Çalışanlar&quot; menüsünü kullanın.
           </Alert>
         ) : (
           <TableContainer component={Paper}>

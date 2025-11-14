@@ -477,8 +477,8 @@ const PropertiesPage = () => {
                 </Typography>
                 <Typography variant="body2" component="ol" sx={{ pl: 2, m: 0 }}>
                   <li>Aşağıdaki bilgileri kopyalayın</li>
-                  <li>"DASK Sitesini Aç" butonuna tıklayın</li>
-                  <li>Açılan sayfada "Sorgulama Tipi" olarak <strong>"Vergi No / DASK Poliçe No"</strong> seçin</li>
+                  <li>&quot;DASK Sitesini Aç&quot; butonuna tıklayın</li>
+                  <li>Açılan sayfada &quot;Sorgulama Tipi&quot; olarak <strong>&quot;Vergi No / DASK Poliçe No&quot;</strong> seçin</li>
                   <li>Kopyaladığınız bilgileri yapıştırın ve sorgulayın</li>
                 </Typography>
               </Alert>

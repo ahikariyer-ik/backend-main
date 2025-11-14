@@ -624,7 +624,7 @@ const WorkersListPage = () => {
               <strong>{selectedWorker?.firstName} {selectedWorker?.lastName}</strong> çalışanını pasife almak istediğinizden emin misiniz?
               <br />
               <br />
-              Pasife alınan çalışanlar "İşten Ayrılanlar" sekmesinde görünecektir.
+              Pasife alınan çalışanlar &quot;İşten Ayrılanlar&quot; sekmesinde görünecektir.
             </DialogContentText>
             <TextField
               fullWidth

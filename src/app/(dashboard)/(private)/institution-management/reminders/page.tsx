@@ -255,7 +255,7 @@ const RemindersPage = () => {
                           Henüz anımsatıcı eklenmemiş
                         </Typography>
                         <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                          "Senkronize Et" butonuna tıklayarak mevcut konut ve araç tarihlerinden otomatik anımsatıcılar oluşturabilirsiniz.
+                          &quot;Senkronize Et&quot; butonuna tıklayarak mevcut konut ve araç tarihlerinden otomatik anımsatıcılar oluşturabilirsiniz.
                         </Typography>
                       </Box>
                     </TableCell>

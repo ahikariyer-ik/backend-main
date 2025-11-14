@@ -312,7 +312,7 @@ const TerminatedWorkersPage = () => {
               <strong>{selectedWorker?.firstName} {selectedWorker?.lastName}</strong> çalışanını tekrar aktif yapmak istediğinizden emin misiniz?
               <br />
               <br />
-              Bu işlemden sonra çalışan "Çalışanlarım" listesinde görünecek ve işten ayrılış bilgileri silinecektir.
+              Bu işlemden sonra çalışan &quot;Çalışanlarım&quot; listesinde görünecek ve işten ayrılış bilgileri silinecektir.
             </DialogContentText>
           </DialogContent>
           <DialogActions>
