@@ -32,23 +32,41 @@ const CompanyProfilePage = () => {
   const [galleryPreviews, setGalleryPreviews] = useState<string[]>([])
 
   useEffect(() => {
-    const profile = authService.getCompanyProfile()
+    const loadProfile = async () => {
+      setLoading(true)
+      
+      try {
+        // Önce auth check yap
+        await authService.checkAuth()
+        
+        const profile = authService.getCompanyProfile()
 
-    if (profile) {
-      setCompanyData(profile)
+        if (profile) {
+          setCompanyData(profile)
 
-      if (profile.logo) {
-        setLogoPreview(`${process.env.NEXT_PUBLIC_API_URL}${profile.logo.url}`)
-      }
+          if (profile.logo) {
+            setLogoPreview(`${process.env.NEXT_PUBLIC_API_URL}${profile.logo.url}`)
+          }
 
-      if (profile.companyGallery) {
-        const previews = profile.companyGallery.map(
-          (image: any) => `${process.env.NEXT_PUBLIC_API_URL}${image.url}`
-        )
+          if (profile.companyGallery) {
+            const previews = profile.companyGallery.map(
+              (image: any) => `${process.env.NEXT_PUBLIC_API_URL}${image.url}`
+            )
 
-        setGalleryPreviews(previews)
+            setGalleryPreviews(previews)
+          }
+        } else {
+          setError('Şirket profili bulunamadı. Lütfen sistem yöneticisi ile iletişime geçin.')
+        }
+      } catch (error) {
+        console.error('Profile load error:', error)
+        setError('Profil yüklenirken bir hata oluştu')
+      } finally {
+        setLoading(false)
       }
     }
+
+    loadProfile()
   }, [])
 
   const handleLogoChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -153,11 +171,38 @@ return
     }
   }
 
-  if (!companyData) {
+  if (loading) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
         <CircularProgress />
       </Box>
+    )
+  }
+
+  if (error && !companyData) {
+    return (
+      <Card>
+        <CardContent>
+          <Alert severity="error" sx={{ mb: 2 }}>
+            {error}
+          </Alert>
+          <Typography variant="body2" color="text.secondary">
+            Şirket profili yüklenemedi. Lütfen sayfayı yenileyin veya sistem yöneticisi ile iletişime geçin.
+          </Typography>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  if (!companyData) {
+    return (
+      <Card>
+        <CardContent>
+          <Alert severity="warning">
+            Şirket profili bulunamadı
+          </Alert>
+        </CardContent>
+      </Card>
     )
   }
 

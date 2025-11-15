@@ -22,10 +22,11 @@ export interface Decision {
 export const decisionService = {
   async getAll(institutionId?: string): Promise<Decision[]> {
     const params: any = {
-      populate: ['institution', 'document']
+      populate: ['institution', 'document'],
+      'sort[0]': 'decisionDate:desc'
     }
     if (institutionId) {
-      params.institutionId = institutionId
+      params['filters[institution][id]'] = institutionId
     }
     const response = await axiosClient.get('/api/decisions', { params })
     return response.data.data

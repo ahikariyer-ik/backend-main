@@ -199,7 +199,12 @@ export class AuthService {
     if (!this.isCompany() || !this.user) return
 
     try {
-      const response = await axiosClient.get<{ data: StrapiCompanyProfile[] }>('/api/company-profiles')
+      const response = await axiosClient.get<{ data: StrapiCompanyProfile[] }>('/api/company-profiles', {
+        params: {
+          'filters[owner][id]': this.user.id,
+          populate: ['logo', 'companyGallery', 'sector']
+        }
+      })
 
       if (response.data.data?.[0]) {
         this.companyProfile = response.data.data[0]
